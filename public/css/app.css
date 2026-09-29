@@ -1,0 +1,1026 @@
+/* ==========================================================================
+   APP.CSS — TAMBAHAN KECIL UNTUK FITUR BARU
+   File ini hanya menambah komponen yang belum ada (toast, podium ranking,
+   tab verifikasi, kotak Kodex pada dashboard). Tidak mengubah atau menimpa
+   style lama pada css/style.css maupun admin/css/admin.css.
+   ========================================================================== */
+
+/* ---------- TOAST ---------- */
+.toast-wrap {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--navy-900);
+  color: #fff;
+  padding: 13px 18px;
+  border-radius: 12px;
+  font-size: .86rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--cyan-400);
+  max-width: 330px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn .25s ease;
+}
+
+.toast.ok {
+  border-left-color: #22C55E;
+}
+
+.toast.bad {
+  border-left-color: #F87171;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media(max-width:640px) {
+  .toast-wrap {
+    left: 14px;
+    right: 14px;
+  }
+
+  .toast {
+    max-width: none;
+  }
+}
+
+/* ---------- PODIUM RANKING ---------- */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  align-items: end;
+  margin-bottom: 40px;
+}
+
+.podium-item {
+  border-radius: var(--radius-lg);
+  padding: 28px 22px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(160deg, var(--navy-900), var(--blue-600));
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.podium-item.p1 {
+  padding: 40px 22px;
+  background: linear-gradient(160deg, var(--navy-800), var(--cyan-400));
+  order: 2;
+}
+
+.podium-item.p2 {
+  order: 1;
+}
+
+.podium-item.p3 {
+  order: 3;
+}
+
+.podium-medal {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.podium-photo {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  margin: 14px auto 12px auto;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid rgba(255, 255, 255, .4);
+}
+
+.podium-item h4 {
+  color: #fff;
+  font-size: 1.02rem;
+  margin: 0 0 2px 0;
+}
+
+.podium-meta {
+  font-size: .8rem;
+  color: rgba(255, 255, 255, .75);
+}
+
+.podium-score {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 14px;
+}
+
+.podium-score span {
+  font-size: .75rem;
+  font-weight: 500;
+  display: block;
+  color: rgba(255, 255, 255, .75);
+}
+
+@media(max-width:768px) {
+  .podium {
+    grid-template-columns: 1fr;
+  }
+
+  .podium-item.p1 {
+    order: -1;
+    padding: 30px 22px;
+  }
+}
+
+/* ---------- BARIS RANKING ---------- */
+.rank-row {
+  display: grid;
+  grid-template-columns: 56px 1.7fr repeat(4, .8fr) .9fr;
+  gap: 14px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  font-size: .9rem;
+}
+
+.rank-row.head {
+  background: var(--grey-50);
+  box-shadow: none;
+  font-size: .76rem;
+  color: var(--grey-500);
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.rank-no {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 105, 170, .1);
+  color: var(--blue-600);
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+
+.rank-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rank-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.rank-person strong {
+  display: block;
+  font-size: .92rem;
+  color: var(--navy-900);
+}
+
+.rank-person span {
+  font-size: .78rem;
+  color: var(--grey-500);
+}
+
+.rank-score {
+  font-weight: 800;
+  color: var(--blue-600);
+  font-family: var(--font-display);
+}
+
+@media(max-width:900px) {
+  .rank-row {
+    grid-template-columns: 52px 1fr auto;
+  }
+
+  .rank-row .rank-col {
+    display: none;
+  }
+
+  .rank-row.head {
+    display: none;
+  }
+}
+
+/* ---------- TAB SEDERHANA (verifikasi, prestasi saya) ---------- */
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--grey-300);
+  background: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--grey-500);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.tab-btn:hover {
+  border-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.tab-btn.active {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: #fff;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ---------- KOTAK KODEX PADA DASHBOARD ---------- */
+.kodex-tip {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #fff;
+  border: 1.5px dashed var(--cyan-400);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 26px;
+}
+
+.kodex-tip img {
+  width: 76px;
+  flex-shrink: 0;
+  animation: floaty 4.5s ease-in-out infinite;
+}
+
+.kodex-tip strong {
+  display: block;
+  color: var(--navy-900);
+  font-family: var(--font-display);
+  margin-bottom: 2px;
+}
+
+.kodex-tip p {
+  margin: 0;
+  font-size: .86rem;
+  color: var(--grey-500);
+}
+
+@keyframes floaty {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ---------- LIST NOTIFIKASI / VERIFIKASI ---------- */
+.notif-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.notif-item.unread {
+  border-color: rgba(56, 189, 248, .5);
+  background: rgba(56, 189, 248, .05);
+}
+
+.notif-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 105, 170, .1);
+  color: var(--blue-600);
+}
+
+.notif-item strong {
+  display: block;
+  font-size: .92rem;
+  color: var(--navy-900);
+}
+
+.notif-item p {
+  margin: 3px 0 0 0;
+  font-size: .85rem;
+  color: var(--grey-500);
+}
+
+.notif-time {
+  font-size: .75rem;
+  color: var(--grey-500);
+  margin-top: 6px;
+  display: block;
+}
+
+.notif-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ---------- PROFIL DASHBOARD ---------- */
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 26px 28px;
+  margin-bottom: 26px;
+  background: var(--grad-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-head .p-photo {
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(255, 255, 255, .35);
+  flex-shrink: 0;
+}
+
+.profile-head h2 {
+  color: #fff;
+  margin: 0 0 4px 0;
+  font-size: 1.3rem;
+}
+
+.profile-head p {
+  color: rgba(255, 255, 255, .8);
+  margin: 0;
+  font-size: .88rem;
+}
+
+.profile-head .spacer {
+  margin-left: auto;
+}
+
+dl.kv {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 26px;
+  margin: 0;
+}
+
+dl.kv dt {
+  font-size: .75rem;
+  color: var(--grey-500);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+dl.kv dd {
+  margin: 4px 0 0 0;
+  font-weight: 600;
+  font-size: .92rem;
+  color: var(--navy-900);
+}
+
+@media(max-width:640px) {
+  dl.kv {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- DROPZONE UPLOAD SIMULASI ---------- */
+.dropzone {
+  border: 2px dashed var(--grey-300);
+  border-radius: var(--radius-md);
+  padding: 26px;
+  text-align: center;
+  background: var(--grey-50);
+  color: var(--grey-500);
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.dropzone strong {
+  display: block;
+  color: var(--navy-900);
+  margin-bottom: 4px;
+}
+
+/* ---------- KARTU AKREDITASI HALAMAN AKREDITASI ---------- */
+.akreditasi-hero {
+  display: grid;
+  grid-template-columns: .8fr 1.2fr;
+  gap: 36px;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  color: #fff;
+  background: var(--grad-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.akreditasi-seal {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 3px solid rgba(255, 255, 255, .45);
+  background: rgba(255, 255, 255, .08);
+}
+
+.akreditasi-seal b {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+
+.akreditasi-seal span {
+  font-size: .78rem;
+  color: rgba(255, 255, 255, .8);
+  margin-top: 6px;
+}
+
+.akreditasi-hero h2 {
+  color: #fff;
+}
+
+.akreditasi-hero p {
+  color: rgba(255, 255, 255, .82);
+}
+
+.akreditasi-hero dl {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin: 24px 0 0 0;
+}
+
+.akreditasi-hero dt {
+  font-size: .75rem;
+  color: rgba(255, 255, 255, .65);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.akreditasi-hero dd {
+  margin: 4px 0 0 0;
+  font-weight: 600;
+  font-size: .95rem;
+}
+
+@media(max-width:900px) {
+  .akreditasi-hero {
+    grid-template-columns: 1fr;
+    padding: 28px;
+  }
+
+  .akreditasi-hero dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- TIMELINE ---------- */
+.timeline {
+  border-left: 2px solid var(--grey-100);
+  padding-left: 28px;
+  margin-left: 10px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 28px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -37px;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--cyan-400);
+}
+
+.timeline-year {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--blue-600);
+  font-size: .9rem;
+}
+
+.timeline-item h4 {
+  margin: 4px 0 4px 0;
+  font-size: 1rem;
+}
+
+.timeline-item p {
+  margin: 0;
+  font-size: .88rem;
+}
+
+/* ---------- EMPTY STATE PUBLIK ---------- */
+.empty-public {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--grey-500);
+  grid-column: 1 / -1;
+}
+
+.empty-public img {
+  width: 120px;
+  margin: 0 auto 16px auto;
+}
+/* ==========================================================================
+   EMPTY STATE HALAMAN PUBLIK
+   Dipakai saat database belum berisi data. Mengikuti gaya card yang sudah ada.
+   ========================================================================== */
+.empty-public{
+  grid-column:1 / -1;
+  text-align:center;
+  padding:48px 24px;
+  background:var(--grey-50);
+  border:1.5px dashed var(--grey-300);
+  border-radius:22px;
+}
+.empty-public img{ width:110px; margin:0 auto 16px auto; display:block; opacity:.9; }
+.empty-public p{ margin:0; color:var(--grey-500); font-size:.92rem; }
+.empty-public i{ font-size:2rem; color:var(--grey-300); display:block; margin-bottom:12px; }
+
+/* Pesan validasi Laravel */
+.form-error{ color:#DC2626; font-size:.8rem; margin-top:6px; display:block; }
+.alert-error{
+  background:#FEE2E2; color:#B91C1C; border-radius:12px;
+  padding:14px 16px; font-size:.86rem; margin-bottom:18px;
+}
+.alert-error ul{ margin:6px 0 0 18px; list-style:disc; }
+
+/* Tab berbentuk link (filter server-side) & tombol nonaktif pada pagination */
+a.tab-btn{ text-decoration:none; }
+.btn.disabled{ opacity:.45; pointer-events:none; }
+
+/* ---------- REVISI 22-09-2026: INPUT BOBOT TETAP (read-only) ----------
+   Hanya menandai input bobot yang dikunci. Warna memakai token lama. */
+.form-group input.input-terkunci,
+.form-group input.input-terkunci:disabled {
+  background: var(--grey-50);
+  color: var(--navy-900);
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* ---------- REVISI 22-09-2026: TABEL DATA MAHASISWA (halaman publik) ----------
+   Revisi dosen: seluruh daftar mahasiswa ditampilkan sebagai TABEL, bukan card.
+   Tampilan meniru komponen yang sudah ada: kotak putih + border + radius
+   seperti .rank-row, header abu-abu kapital seperti .rank-row.head, dan
+   isi sel seperti table.data-table pada dashboard. Tidak ada warna/font baru. */
+.tabel-publik-wrap {
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabel-publik {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+
+.tabel-publik th {
+  text-align: left;
+  padding: 14px 18px;
+  background: var(--grey-50);
+  color: var(--grey-500);
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabel-publik td {
+  padding: 14px 18px;
+  border-top: 1px solid var(--grey-100);
+  vertical-align: middle;
+  color: var(--grey-700);
+}
+
+.tabel-publik td strong {
+  color: var(--navy-900);
+}
+
+.tabel-publik .sub {
+  display: block;
+  font-size: .78rem;
+  color: var(--grey-500);
+}
+
+.tabel-publik .label-kriteria {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(23, 105, 170, .1);
+  color: var(--blue-600);
+  font-size: .72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tabel-publik .label-kriteria.non {
+  background: rgba(56, 189, 248, .15);
+  color: #0284C7;
+}
+
+.tabel-publik .poin {
+  font-weight: 800;
+  color: var(--blue-600);
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+.tabel-publik .empty-row td {
+  text-align: center;
+  color: var(--grey-500);
+  padding: 30px 18px;
+}
+
+.tabel-publik-info {
+  font-size: .85rem;
+  color: var(--grey-500);
+  margin: 14px 0 0 0;
+}
+
+@media(max-width:768px) {
+  .tabel-publik {
+    font-size: .84rem;
+  }
+
+  .tabel-publik th,
+  .tabel-publik td {
+    padding: 12px 14px;
+  }
+
+  .tabel-publik .kolom-opsional {
+    display: none;
+  }
+}
+
+/* ---------- REVISI 24-09-2026: LOGO RESMI PRODI TI ----------
+   Huruf "P" pada .brand-badge diganti LOGO TI resmi (public/images/logo-ti.png,
+   PNG transparan berwarna navy). Ukuran badge tetap sama.
+   Warna logo menyesuaikan latar:
+     - latar terang (navbar setelah di-scroll, halaman login) -> navy asli
+     - latar gelap  (navbar di atas hero, footer, sidebar)     -> putih
+   Versi putih dibuat dengan CSS filter, jadi cukup satu file gambar. */
+.brand-badge.brand-logo {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.brand-badge.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: filter .3s ease;
+}
+
+/* Latar gelap -> logo putih */
+.navbar:not(.is-solid) .brand-badge.brand-logo img,
+.footer .brand-badge.brand-logo img,
+.sidebar-brand .brand-badge.brand-logo img {
+  filter: brightness(0) invert(1);
+}
+
+/* ==========================================================================
+   REVISI 26-09-2026 — NAVBAR 7 MENU (27-09-2026: menjadi 6 menu —
+   Beranda, Profil, Mahasiswa, Testimoni, Lowongan Kerja, Informasi). Warna, font, ukuran huruf, dropdown, dan efek hover
+   TIDAK diubah; hanya jarak horizontal antar menu dirapatkan agar tetap satu
+   baris. Pada lebar layar menengah dipakai pola responsif yang SUDAH ADA
+   (lang-switch disembunyikan, lalu menu hamburger seperti tampilan ≤900px).
+   ========================================================================== */
+@media (min-width: 901px) {
+  .nav-menu { gap: 2px; }
+  .nav-link { padding: 12px 12px; white-space: nowrap; }
+  .navbar .brand-text,
+  .nav-actions .lang-switch { white-space: nowrap; }
+}
+
+@media (min-width: 901px) and (max-width: 1260px) {
+  .nav-actions .lang-switch { display: none; }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+  .nav-menu { display: none; }
+  .hamburger { display: flex; }
+  .navbar.mobile-open .nav-menu {
+    display: flex; position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+    flex-direction: column; align-items: stretch; padding: 16px; box-shadow: var(--shadow-lg); gap: 2px; border-radius: 0 0 16px 16px;
+  }
+  .navbar.mobile-open .nav-link { color: var(--navy-900) !important; }
+  .navbar.mobile-open .dropdown {
+    position: static; opacity: 1; visibility: visible; box-shadow: none; transform: none; display: none; padding-left: 14px;
+  }
+  .navbar.mobile-open .nav-item.open .dropdown { display: block; }
+}
+
+
+/* ==========================================================================
+   REVISI 28-09-2026 tahap 2 — KODE ETIK MAHASISWA (PDF UKURAN PENUH)
+   "REVISI BARU(1).docx": dokumen tampil langsung sebagai PDF dan tiap lembar dibuat
+   FULL selebar area konten (tidak lagi setengah seperti tampilan buku dua halaman).
+   Halaman ditumpuk vertikal, toolbar menempel di bawah navbar. Warna, radius,
+   bayangan, dan tombol toolbar tetap memakai gaya pembaca sebelumnya.
+   ========================================================================== */
+.kodetik-reader { position: relative; }
+.kodetik-bar {
+  position: sticky; top: 72px; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px;
+  padding: 8px 10px; background: #fff; border: 1px solid var(--grey-100);
+  border-radius: var(--radius-md) var(--radius-md) 0 0; box-shadow: var(--shadow-sm);
+}
+.kodetik-grup { display: flex; align-items: center; gap: 2px; }
+.kodetik-hal {
+  display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; white-space: nowrap;
+  font-size: .85rem; color: var(--grey-500); background: var(--grey-50); border-radius: 8px;
+}
+.kodetik-hal input {
+  width: 46px; padding: 3px 4px; text-align: center; font: inherit; font-weight: 700; color: var(--navy-900);
+  border: 1.5px solid var(--grey-300); border-radius: 6px; background: #fff; -moz-appearance: textfield;
+}
+.kodetik-hal input::-webkit-outer-spin-button, .kodetik-hal input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.kodetik-zoom { min-width: 50px; text-align: center; font-size: .8rem; font-weight: 600; color: var(--grey-700); }
+.kodetik-alat {
+  height: 38px; min-width: 38px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--grey-700);
+  font-size: .95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .2s ease, color .2s ease;
+}
+.kodetik-alat span { font-size: .82rem; }
+.kodetik-alat:hover { background: rgba(23, 105, 170, .1); color: var(--blue-600); }
+.kodetik-alat:disabled { opacity: .35; cursor: not-allowed; background: transparent; color: var(--grey-700); }
+.kodetik-alat.aktif { background: rgba(23, 105, 170, .1); color: var(--blue-600); }
+.kodetik-alat:focus-visible, .kodetik-hal input:focus-visible { outline: 2px solid var(--cyan-400); outline-offset: 2px; }
+
+.kodetik-stage {
+  position: relative; overflow: auto; min-height: 75vh;
+  padding: 24px; background: linear-gradient(180deg, #74839A 0%, var(--grey-500) 100%);
+  border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-md);
+}
+.kodetik-halaman { display: flex; flex-direction: column; align-items: center; gap: 20px; min-width: min-content; }
+.kodetik-lembar {
+  position: relative; flex-shrink: 0; background: #fff; border-radius: 3px; overflow: hidden;
+  box-shadow: 0 12px 30px rgba(6, 43, 96, .28); scroll-margin-top: 140px;
+}
+.kodetik-lembar canvas { display: block; width: 100%; height: 100%; }
+.kodetik-lembar:not(.terender)::after {
+  content: "Memuat halaman..."; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; color: var(--grey-500);
+}
+.kodetik-nomor {
+  position: absolute; right: 10px; bottom: 8px; padding: 2px 9px; border-radius: 999px;
+  font-size: .72rem; color: var(--grey-500); background: rgba(248, 250, 252, .9);
+}
+.kodetik-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  min-height: 60vh; color: #fff; font-size: .9rem; text-align: center;
+}
+.kodetik-loading img { width: 90px; animation: floaty 4.5s ease-in-out infinite; }
+.kodetik-reader.siap .kodetik-loading { display: none; }
+.kodetik-petunjuk { margin-top: 12px; }
+.kodetik-fallback iframe { width: 100%; border: 0; display: block; background: #fff; border-radius: 3px; }
+.kodetik-reader.gagal [data-kodetik-hanya-pdfjs] { display: none; }
+
+.kodetik-reader:fullscreen { background: var(--grey-500); overflow: hidden; display: flex; flex-direction: column; }
+.kodetik-reader:fullscreen .kodetik-bar { position: static; border-radius: 0; }
+.kodetik-reader:fullscreen .kodetik-stage { flex: 1; min-height: 0; border-radius: 0; box-shadow: none; }
+.kodetik-reader:fullscreen .kodetik-petunjuk { display: none; }
+
+@media (max-width: 900px) {
+  .kodetik-alat span { display: none; }
+}
+@media (max-width: 600px) {
+  .kodetik-bar { top: 62px; padding: 6px; justify-content: center; }
+  .kodetik-stage { padding: 10px; min-height: 60vh; }
+  .kodetik-halaman { gap: 10px; }
+  .kodetik-alat { height: 34px; min-width: 34px; padding: 0 8px; font-size: .9rem; }
+  .kodetik-zoom { display: none; }
+}
+
+/* ==========================================================================
+   REVISI 28-09-2026 — STATUS DOSEN PENGAJAR (Aktif / Pendidikan / Nonaktif)
+   Memakai pill .label-kriteria yang sudah ada; warna mengikuti badge dashboard.
+   ========================================================================== */
+.label-kriteria[class*="status-"] {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; white-space: nowrap;
+}
+.label-kriteria.status-aktif { background: #DCFCE7; color: #16A34A; }
+.label-kriteria.status-pendidikan { background: rgba(23, 105, 170, .1); color: var(--blue-600); }
+.label-kriteria.status-nonaktif { background: var(--grey-100); color: var(--grey-500); }
+
+/* ==========================================================================
+   REVISI 28-09-2026 — KURIKULUM (Profil > Kurikulum)
+   Tabel memakai .tabel-publik yang sudah ada; hanya judul per semester.
+   ========================================================================== */
+.kurikulum-semester { margin-bottom: 36px; }
+.kurikulum-judul {
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px;
+  font-size: 1.15rem; margin: 0 0 14px 0; color: var(--navy-900);
+}
+.kurikulum-judul span { font-family: var(--font-body); font-size: .85rem; font-weight: 500; color: var(--grey-500); }
+.tabel-publik .tampil-mobile { display: none; }
+@media (max-width: 768px) {
+  .tabel-publik .tampil-mobile { display: block; }
+}
+
+/* ==========================================================================
+   REVISI 28-09-2026 (tahap 2, "REVISI BARU(1).docx")
+   Navbar kembali ke penulisan Capital Each Word: aturan text-transform: uppercase
+   dan perluasan menu hamburger 1101–1180px dari revisi sebelumnya DIHAPUS, sehingga
+   navbar kembali persis seperti gaya asli (style.css).
+   ========================================================================== */
+
+/* ---------- JARAK ANTAR PANEL/TABEL DASHBOARD YANG KONSISTEN ---------- */
+.content > .panel + .two-col,
+.content > .two-col + .panel,
+.content > .two-col + .two-col,
+.content > .astats-grid + .panel { margin-top: 26px; }
+.content > .two-col > .panel + .panel { margin-top: 0; }
+
+/* ---------- IMPOR CSV (modal bersama Data Master) ---------- */
+.impor-box { max-width: 720px; }
+.impor-kolom { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.impor-kolom .badge { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 600; cursor: help; }
+.dropzone.seret { border-color: var(--blue-600); color: var(--blue-600); background: rgba(23,105,170,.05); }
+.impor-pratinjau { margin-top: 14px; }
+.impor-ringkasan {
+  border-radius: 12px; padding: 12px 14px; font-size: .84rem; margin-bottom: 12px;
+  background: var(--grey-50); color: var(--grey-700); border: 1px solid var(--grey-100);
+}
+.impor-ringkasan.ok { background: #F0FDF4; border-color: #BBF7D0; color: #166534; }
+.impor-ringkasan.warn { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+.impor-ringkasan.bad { background: #FEE2E2; border-color: #FECACA; color: #B91C1C; }
+.impor-ringkasan ul { margin: 6px 0 0 18px; padding: 0; }
+.impor-tabel { max-height: 230px; overflow: auto; border: 1px solid var(--grey-100); border-radius: 12px; }
+.impor-tabel:empty, .impor-ringkasan.bad + .impor-tabel { display: none; }
+.impor-tabel table.data-table { font-size: .8rem; }
+.impor-tabel table.data-table td, .impor-tabel table.data-table th { padding: 8px 12px; white-space: nowrap; }
+.impor-tabel td.sel-kosong { background: #FEF2F2; color: #DC2626; }
+.impor-opsi { display: flex; flex-direction: column; gap: 8px; }
+.impor-opsi label { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: .86rem; color: var(--grey-700); margin: 0; cursor: pointer; }
+.impor-opsi input { width: auto; margin: 0; }
+.impor-opsi .form-hint { margin: 0; }
+.btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.content .panel[id] { scroll-margin-top: 96px; }
+
+/* ==========================================================================
+   REVISI 28-09-2026 tahap 2 — PENATAAN LAYOUT HALAMAN PUBLIK (selektif)
+   "[Teks/Deskripsi] + [Card/Tabel]" agar halaman yang hanya berisi card/tabel tidak
+   terasa sepi. Memakai token warna, radius, shadow, .card, .eyebrow, .benefit-icon
+   yang sudah ada — tidak ada warna/font baru.
+   ========================================================================== */
+.konten-split {
+  display: grid;
+  grid-template-columns: minmax(250px, .85fr) 2.15fr;
+  gap: 44px;
+  align-items: start;
+}
+.konten-split-teks { position: sticky; top: 110px; }
+.konten-split-teks h2 { font-size: 1.7rem; margin-bottom: 12px; }
+.konten-split-teks > p { font-size: .95rem; margin-bottom: 22px; }
+.konten-split .grid-2 { gap: 22px; }
+
+.intro-baris {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: center;
+  margin-bottom: 34px;
+}
+.intro-baris h2 { font-size: 1.7rem; margin-bottom: 10px; }
+.intro-baris p { font-size: .95rem; margin: 0; }
+
+/* Ringkasan angka kecil (dari database) */
+.ringkas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.ringkas-list { display: flex; flex-direction: column; gap: 12px; }
+.ringkas-item {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--grey-100); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); padding: 16px 18px;
+}
+.ringkas-grid .ringkas-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+.ringkas-item .benefit-icon { width: 42px; height: 42px; border-radius: 12px; font-size: 1.05rem; margin: 0; flex-shrink: 0; }
+.ringkas-item b { display: block; font-family: var(--font-display); font-size: 1.45rem; font-weight: 800; color: var(--navy-900); line-height: 1.1; }
+.ringkas-item span { font-size: .8rem; color: var(--grey-500); font-weight: 500; }
+
+/* Pesan "tidak ditemukan" untuk pencarian realtime */
+.cari-kosong { display: none; }
+.cari-kosong.tampil { display: block; }
+tr.cari-kosong.tampil { display: table-row; }
+
+/* Kartu Sarana & Prasarana / Kegiatan Mahasiswa: memakai .news-card yang sudah ada */
+.news-card.tanpa-link { cursor: default; }
+.news-body .ta-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; }
+.fasilitas-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0 0; padding: 0; list-style: none; }
+.fasilitas-list li {
+  font-size: .74rem; font-weight: 600; color: var(--grey-700);
+  background: var(--grey-50); border: 1px solid var(--grey-100); border-radius: 999px; padding: 4px 10px;
+}
+.news-photo.ikon-saja {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(23, 105, 170, .06); color: var(--blue-600); font-size: 2.6rem;
+}
+
+@media (max-width: 1024px) {
+  .konten-split { grid-template-columns: 1fr; gap: 28px; }
+  .konten-split-teks { position: static; }
+  .intro-baris { grid-template-columns: 1fr; gap: 22px; }
+  .ringkas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .konten-split .grid-2 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .ringkas-grid { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .ringkas-grid .ringkas-item { padding: 12px; }
+  .ringkas-grid .ringkas-item span { font-size: .72rem; }
+  .ringkas-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ringkas-list .ringkas-item { padding: 12px; gap: 10px; }
+  .ringkas-item b { font-size: 1.2rem; }
+  .konten-split-teks h2, .intro-baris h2 { font-size: 1.4rem; }
+  .konten-split .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 340px) {
+  .ringkas-grid { grid-template-columns: 1fr; }
+  .ringkas-grid .ringkas-item { flex-direction: row; align-items: center; }
+}
