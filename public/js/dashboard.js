@@ -95,6 +95,9 @@ function tiInitFormIsi() {
       var hapusFoto = form.querySelector('[name="hapus_foto"]');
       if (hapusFoto) hapusFoto.checked = false;
 
+      // Komponen khusus (mis. chip penerima pengumuman) mengisi dirinya dari data yang sama.
+      form.dispatchEvent(new CustomEvent('ti:isi-form', { detail: nilai }));
+
       // Perbarui field bersyarat (data-tampil-jika) setelah form diisi.
       $$d('select', form).forEach(function (sel) { sel.dispatchEvent(new Event('change')); });
 
@@ -431,6 +434,198 @@ function tiInitFokus() {
   });
 }
 
+/* ---------- PILIH BANYAK PENERIMA PENGUMUMAN (REVISI DOSEN 01-10-2026) ----------
+   Konsep "bagikan" Google Drive: ketik email @mhs.politala.ac.id -> sistem mencari
+   mahasiswa di DATABASE (GET /staff-pengumuman/cari-mahasiswa) -> pilih -> tampil
+   sebagai chip [ Nama × ]. Setiap chip membawa <input hidden name="penerima[]">.
+   Validasi final (domain email, mahasiswa berprestasi, tidak dobel) tetap di Laravel. */
+function tiInitPilihPenerima() {
+  $$d('[data-pilih-penerima]').forEach(function (wadah) {
+    var form = wadah.closest('form');
+    var kotak = wadah.querySelector('[data-penerima-box]');
+    var input = wadah.querySelector('[data-penerima-input]');
+    var saran = wadah.querySelector('[data-penerima-saran]');
+    var jumlah = wadah.querySelector('[data-penerima-jumlah]');
+    var url = wadah.getAttribute('data-url');
+    var domain = wadah.getAttribute('data-domain') || '';
+    var selectPrestasi = form ? form.querySelector('[data-prestasi-penerima]') : null;
+    var hasil = [];
+    var aktif = -1;
+    var timer = null;
+    var urutan = 0;
+
+    var esc = function (t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; };
+    var dipilih = function () {
+      return $$d('input[name="penerima[]"]', kotak).map(function (i) { return i.value; });
+    };
+
+    // Opsi "Terkait Prestasi" hanya untuk prestasi milik penerima yang dipilih.
+    var saringPrestasi = function () {
+      if (!selectPrestasi) return;
+      var nim = dipilih();
+      $$d('option[data-nim]', selectPrestasi).forEach(function (o) {
+        var cocok = nim.indexOf(o.getAttribute('data-nim')) !== -1;
+        o.hidden = !cocok;
+        o.disabled = !cocok;
+      });
+      var terpilih = selectPrestasi.options[selectPrestasi.selectedIndex];
+      if (terpilih && terpilih.disabled) selectPrestasi.value = '';
+    };
+
+    var perbarui = function () {
+      var n = dipilih().length;
+      if (jumlah) jumlah.textContent = n;
+      kotak.classList.toggle('kosong', n === 0);
+      saringPrestasi();
+    };
+
+    var tutupSaran = function () { saran.hidden = true; saran.innerHTML = ''; hasil = []; aktif = -1; };
+
+    var tambahChip = function (m) {
+      if (!m || !m.nim || dipilih().indexOf(m.nim) !== -1) return; // tidak boleh dobel
+      var chip = document.createElement('span');
+      chip.className = 'penerima-chip';
+      chip.setAttribute('data-nim', m.nim);
+      chip.title = m.email || '';
+      chip.innerHTML =
+        '<span class="penerima-avatar">' + esc((m.nama || '?').charAt(0).toUpperCase()) + '</span>' +
+        '<span class="penerima-teks"><b>' + esc(m.nama) + '</b><small>' + esc(m.email) + '</small></span>' +
+        '<input type="hidden" name="penerima[]" value="' + esc(m.nim) + '">' +
+        '<button type="button" class="penerima-hapus" aria-label="Hapus ' + esc(m.nama) + '">&times;</button>';
+      kotak.insertBefore(chip, input);
+      perbarui();
+    };
+
+    var kosongkan = function () {
+      $$d('.penerima-chip', kotak).forEach(function (c) { c.parentNode.removeChild(c); });
+      perbarui();
+    };
+
+    var tampilPesan = function (pesan, tipe) {
+      saran.innerHTML = '<div class="penerima-pesan ' + (tipe || '') + '"><i class="fa-solid ' +
+        (tipe === 'bad' ? 'fa-circle-exclamation' : 'fa-circle-info') + '"></i> ' + esc(pesan) + '</div>';
+      saran.hidden = false;
+    };
+
+    var tandaiAktif = function () {
+      $$d('.penerima-opsi', saran).forEach(function (o, i) { o.classList.toggle('aktif', i === aktif); });
+    };
+
+    var tampilHasil = function (data, pesan) {
+      hasil = data || [];
+      aktif = -1;
+      if (!hasil.length) { tampilPesan(pesan || 'Mahasiswa tidak ditemukan.', 'bad'); return; }
+      saran.innerHTML = hasil.map(function (m, i) {
+        return '<button type="button" class="penerima-opsi' + (m.bisa_dipilih ? '' : ' nonaktif') + '" data-i="' + i + '"' +
+          (m.bisa_dipilih ? '' : ' aria-disabled="true"') + ' role="option">' +
+          '<span class="penerima-avatar">' + esc((m.nama || '?').charAt(0).toUpperCase()) + '</span>' +
+          '<span class="penerima-teks"><b>' + esc(m.nama) + '</b><small>' + esc(m.email) + ' &middot; ' + esc(m.nim) + '</small>' +
+          (m.bisa_dipilih ? '' : '<em>' + esc(m.alasan) + '</em>') + '</span></button>';
+      }).join('');
+      saran.hidden = false;
+    };
+
+    var pilih = function (i) {
+      var m = hasil[i];
+      if (!m) return;
+      if (!m.bisa_dipilih) { tiToast(m.nama + ': ' + (m.alasan || 'tidak dapat dipilih'), 'bad'); return; }
+      tambahChip(m);
+      input.value = '';
+      tutupSaran();
+      input.focus();
+    };
+
+    var cari = function () {
+      var q = input.value.trim();
+      if (q.length < 2) { tutupSaran(); return; }
+      if (q.indexOf('@') !== -1) {
+        var dom = q.split('@')[1] || '';
+        if (dom && domain.indexOf(dom.toLowerCase()) !== 0) {
+          tampilPesan('Penerima hanya boleh email mahasiswa @' + domain + '.', 'bad');
+          return;
+        }
+      }
+      var param = new URLSearchParams();
+      param.append('q', q);
+      dipilih().forEach(function (n) { param.append('kecuali[]', n); });
+      var nomor = ++urutan;
+      tampilPesan('Mencari mahasiswa...', '');
+      fetch(url + '?' + param.toString(), {
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (json) {
+        if (nomor !== urutan) return; // abaikan respons lama
+        tampilHasil(json.data, json.pesan);
+      }).catch(function () {
+        if (nomor !== urutan) return;
+        tampilPesan('Pencarian gagal. Muat ulang halaman lalu coba lagi.', 'bad');
+      });
+    };
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(cari, 250);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' && hasil.length) { e.preventDefault(); aktif = (aktif + 1) % hasil.length; tandaiAktif(); }
+      else if (e.key === 'ArrowUp' && hasil.length) { e.preventDefault(); aktif = (aktif - 1 + hasil.length) % hasil.length; tandaiAktif(); }
+      else if (e.key === 'Enter') {
+        e.preventDefault(); // Enter memilih mahasiswa, bukan mengirim form
+        if (hasil.length) pilih(aktif >= 0 ? aktif : 0);
+      }
+      else if (e.key === 'Escape') { tutupSaran(); }
+      else if (e.key === 'Backspace' && input.value === '') {
+        var chip = $$d('.penerima-chip', kotak).pop();
+        if (chip) { chip.parentNode.removeChild(chip); perbarui(); }
+      }
+    });
+
+    saran.addEventListener('mousedown', function (e) { e.preventDefault(); }); // input tidak kehilangan fokus
+    saran.addEventListener('click', function (e) {
+      var opsi = e.target.closest('.penerima-opsi');
+      if (opsi) pilih(parseInt(opsi.getAttribute('data-i'), 10));
+    });
+
+    kotak.addEventListener('click', function (e) {
+      var hapus = e.target.closest('.penerima-hapus');
+      if (hapus) {
+        var chip = hapus.closest('.penerima-chip');
+        if (chip) chip.parentNode.removeChild(chip);
+        perbarui();
+        return;
+      }
+      input.focus();
+    });
+
+    input.addEventListener('blur', function () { setTimeout(tutupSaran, 150); });
+
+    if (form) {
+      // Tombol Edit pada tabel: isi chip dari data penerima pengumuman tsb.
+      form.addEventListener('ti:isi-form', function (e) {
+        kosongkan();
+        ((e.detail && e.detail.penerima) || []).forEach(tambahChip);
+        input.value = '';
+        tutupSaran();
+      });
+
+      form.addEventListener('submit', function (e) {
+        if (!dipilih().length) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          tiToast('Pilih minimal satu mahasiswa penerima.', 'bad');
+          input.focus();
+        }
+      }, true); // capture: berjalan sebelum efek loading tombol Simpan
+    }
+
+    perbarui();
+  });
+}
+
 /* ---------- FLASH MESSAGE DARI LARAVEL ---------- */
 function tiInitFlash() {
   var box = $d('[data-flash]');
@@ -455,6 +650,7 @@ document.addEventListener('DOMContentLoaded', function () {
   tiInitPratinjauIkon();
   tiInitDropzoneSeret();
   tiInitImporCsv();
+  tiInitPilihPenerima();
   tiInitLoadingSimpan();
   tiInitFokus();
   tiInitFlash();

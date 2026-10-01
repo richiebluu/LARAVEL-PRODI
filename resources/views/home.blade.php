@@ -16,7 +16,7 @@
 
   <!-- =================== HERO SLIDER =================== -->
   <section class="hero-slider">
-    <div class="hero-slide active" style="background-image:url('https://cdn.corenexis.com/f/YVG0IKiag9T.jpg')">
+    <div class="hero-slide active" style="background-image:url('{{ \App\Support\HeroFoto::url('beranda-1') }}')">
       <div class="container">
         <div class="hero-content">
           <span class="eyebrow"><i class="fa-solid fa-microchip"></i> Program Studi Teknologi Informasi</span>
@@ -29,7 +29,7 @@
         </div>
       </div>
     </div>
-    <div class="hero-slide" style="background-image:url('https://cdn.corenexis.com/f/mxRMXHq0qkL.png')">
+    <div class="hero-slide" style="background-image:url('{{ \App\Support\HeroFoto::url('beranda-2') }}')">
       <div class="container">
         <div class="hero-content">
           <span class="eyebrow"><i class="fa-solid fa-medal"></i> Prestasi Mahasiswa</span>
@@ -41,7 +41,7 @@
         </div>
       </div>
     </div>
-    <div class="hero-slide" style="background-image:url('https://cdn.corenexis.com/f/vuQbJbgT58Y.jpg')">
+    <div class="hero-slide" style="background-image:url('{{ \App\Support\HeroFoto::url('beranda-3') }}')">
       <div class="container">
         <div class="hero-content">
           <span class="eyebrow"><i class="fa-solid fa-graduation-cap"></i> Bergabunglah</span>

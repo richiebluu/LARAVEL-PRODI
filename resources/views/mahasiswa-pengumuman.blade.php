@@ -69,7 +69,7 @@
             <span class="badge badge-blue">{{ $g->label_kategori }}</span>
             <h3 style="margin:12px 0 6px 0; font-size:1.02rem;">{{ $g->judul }}</h3>
             <p style="font-size:.8rem; color:var(--grey-500);">
-              {{ optional($g->tanggal_dikirim ?? $g->created_at)->translatedFormat('d F Y') }} &middot; Pengumuman pribadi untuk Anda
+              {{ optional($g->tanggal_dikirim ?? $g->created_at)->translatedFormat('d F Y') }} &middot; Ditujukan untuk Anda
             </p>
             <p style="font-size:.88rem; margin-top:10px;">{{ $g->isi }}</p>
           </div>

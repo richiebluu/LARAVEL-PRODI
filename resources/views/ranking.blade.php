@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('ranking') }}">
     <div class="container">
       <h1>Ranking Mahasiswa</h1>
       <p>Peringkat mahasiswa Teknologi Informasi berdasarkan empat kriteria penilaian.</p>

@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('berita-detail', $berita->gambar_url) }}">
     <div class="container">
       <h1>{{ $berita->judul }}</h1>
       <p><i class="fa-regular fa-calendar"></i> {{ $berita->tanggal->translatedFormat('d F Y') }}@if ($berita->kategori) &middot; {{ $berita->kategori }}@endif</p>

@@ -44,9 +44,11 @@ class Revisi26SeptemberTest extends TestCase
         $this->assertFalse(Schema::hasTable('verifikasi'));
         $this->assertFalse(Schema::hasTable('publikasi'));
         // ERD terbaru: tabel di luar ERD dihapus.
-        foreach (['pengajuan_perubahan', 'pengumuman_penerima', 'notifikasi'] as $t) {
+        foreach (['pengajuan_perubahan', 'notifikasi'] as $t) {
             $this->assertFalse(Schema::hasTable($t), $t);
         }
+        // REVISI DOSEN 01-10-2026: pengumuman_penerima dipakai lagi (satu pengumuman, banyak penerima).
+        $this->assertTrue(Schema::hasTable('pengumuman_penerima'));
         foreach (['struktur_organisasi', 'berita', 'lowongan_pekerjaan', 'testimoni'] as $t) {
             $this->assertTrue(Schema::hasTable($t), $t);
         }
@@ -153,11 +155,11 @@ class Revisi26SeptemberTest extends TestCase
         $m = Mahasiswa::berprestasi()->with('user')->firstOrFail();
         $p = $m->prestasiDisetujui()->first();
 
-        $this->post('/staff-pengumuman', ['nim' => $m->nim, 'prestasi_id' => $p->id_prestasi, 'kategori' => $p->kategori,
+        $this->post('/staff-pengumuman', ['penerima' => [$m->nim], 'prestasi_id' => $p->id_prestasi, 'kategori' => $p->kategori,
             'judul' => 'Draft dulu', 'isi' => 'x', 'status' => 'draft'])->assertSessionHasNoErrors();
         Mail::assertNothingSent();
 
-        $this->post('/staff-pengumuman', ['nim' => $m->nim, 'prestasi_id' => $p->id_prestasi, 'kategori' => $p->kategori,
+        $this->post('/staff-pengumuman', ['penerima' => [$m->nim], 'prestasi_id' => $p->id_prestasi, 'kategori' => $p->kategori,
             'judul' => 'Undangan Apresiasi', 'isi' => 'Selamat atas prestasinya.', 'status' => 'terkirim'])->assertSessionHasNoErrors();
         Mail::assertSent(PengumumanMahasiswaBerprestasi::class, fn ($mail) => $mail->hasTo($m->user->email)
             && $mail->pengumuman->judul === 'Undangan Apresiasi');

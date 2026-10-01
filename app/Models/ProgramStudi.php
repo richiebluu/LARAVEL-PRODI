@@ -62,10 +62,16 @@ class ProgramStudi extends Model
         return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi');
     }
 
-    /** Akreditasi terbaru (berdasarkan tanggal mulai). */
+    /** Riwayat akreditasi, urut tanggal penetapan terbaru (lihat Akreditasi::scopeTerbaru). */
     public function akreditasiTerbaru(): HasMany
     {
-        return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi')->orderByDesc('tanggal_mulai');
+        return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi')->terbaru();
+    }
+
+    /** Akreditasi yang sedang berlaku (status Terakreditasi), terbaru lebih dulu. */
+    public function akreditasiBerlaku(): HasMany
+    {
+        return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi')->terakreditasi()->terbaru();
     }
 
     /** ERD: STAFF_PRODI (1) -- MENGELOLA --> PROGRAM_STUDI (1). */

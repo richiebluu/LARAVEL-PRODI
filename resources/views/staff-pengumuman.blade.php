@@ -20,7 +20,7 @@
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
             <h1>Pengumuman</h1>
-            <div class="subtitle">Pengumuman pribadi untuk mahasiswa berprestasi, dikirim ke email (Gmail) dan dashboard mahasiswa.</div>
+            <div class="subtitle">Satu pengumuman untuk satu atau banyak mahasiswa berprestasi, dikirim ke email (Gmail) dan dashboard mahasiswa.</div>
           </div>
         </div>
         <div class="admin-profile">
@@ -62,16 +62,18 @@
         </div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>Judul</th><th>Kategori Prestasi</th><th>Tanggal</th><th>Mahasiswa Berprestasi</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
+            <thead><tr><th>Judul</th><th>Kategori Prestasi</th><th>Tanggal</th><th>Penerima</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
               @forelse ($daftarPengumuman as $g)
-                @php $penerima = $g->mahasiswa; @endphp
                 <tr>
                   <td><strong>{{ $g->judul }}</strong>
                     <div style="font-size:.78rem; color:var(--grey-500);">{{ Str::limit($g->isi, 60) }}</div></td>
                   <td><span class="badge badge-blue">{{ $g->label_kategori }}</span></td>
                   <td>{{ optional($g->tanggal_dikirim ?? $g->created_at)->translatedFormat('d F Y') }}</td>
-                  <td>{{ $penerima ? $penerima->nama.' - '.$penerima->nim : '-' }}</td>
+                  <td style="min-width:180px;">
+                    <strong>{{ $g->penerima_count }} mahasiswa</strong>
+                    <div style="font-size:.78rem; color:var(--grey-500);">{{ $g->ringkasan_penerima }}</div>
+                  </td>
                   <td><span class="badge {{ $g->status === 'terkirim' ? 'badge-green' : 'badge-grey' }}">{{ $g->status === 'terkirim' ? 'Terkirim' : 'Draft' }}</span></td>
                   <td class="actions">
                     <button class="btn btn-outline btn-sm btn-icon" title="Edit"
@@ -79,7 +81,7 @@
                       data-isi-form="formEditPengumuman"
                       data-action="{{ route('staff-pengumuman.update', $g) }}"
                       data-nilai="{{ json_encode([
-                        'nim' => $g->nim,
+                        'penerima' => $g->penerima->map(fn ($m) => ['nim' => $m->nim, 'nama' => $m->nama, 'email' => $m->email_kontak])->values(),
                         'prestasi_id' => $g->prestasi_id,
                         'kategori' => $g->kategori,
                         'judul' => $g->judul,
@@ -102,20 +104,21 @@
         </div>
         <p class="form-hint" style="margin-top:14px;">
           Pengumuman ditujukan kepada <strong>mahasiswa berprestasi</strong> (memiliki prestasi yang sudah disetujui), bukan berdasarkan ranking.
-          Pengumuman berstatus <strong>terkirim</strong> otomatis tampil pada dashboard mahasiswa yang dipilih
-          (kolom <code>nim</code> pada tabel <code>pengumuman</code>) dan membuat notifikasi pribadi (kolom <code>notifikasi</code>).
+          Satu pengumuman dapat memiliki <strong>banyak penerima</strong> (tabel <code>pengumuman_penerima</code>).
+          Pengumuman berstatus <strong>terkirim</strong> otomatis tampil pada dashboard <strong>setiap</strong> mahasiswa yang dipilih
+          dan membuat notifikasi untuk masing-masing penerima; mahasiswa yang tidak dipilih tidak menerimanya.
           Pengumuman tidak pernah tampil di halaman publik.
         </p>
       </div>
 
-      <div class="modal-overlay" id="modalTambahPengumuman">
+      <div class="modal-overlay" id="modalTambahPengumuman" @if ($errors->any() && ! old('_method')) data-buka-otomatis @endif>
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-pengumuman.store') }}">
             @csrf
             <div class="modal-head"><h3>Buat Pengumuman</h3>
               <button type="button" class="modal-close" data-modal-close><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
-              @include('partials.pengumuman-form', ['daftarMahasiswa' => $daftarMahasiswa, 'daftarPrestasi' => $daftarPrestasi])
+              @include('partials.pengumuman-form', ['penerimaAwal' => $errors->any() && ! old('_method') ? $penerimaLama : collect(), 'pakaiOld' => ! old('_method')])
             </div>
             <div class="modal-foot">
               <button type="button" class="btn btn-outline" data-modal-close>Batal</button>
@@ -133,7 +136,7 @@
             <div class="modal-head"><h3 data-modal-title>Edit Pengumuman</h3>
               <button type="button" class="modal-close" data-modal-close><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
-              @include('partials.pengumuman-form', ['daftarMahasiswa' => $daftarMahasiswa, 'daftarPrestasi' => $daftarPrestasi])
+              @include('partials.pengumuman-form', ['penerimaAwal' => collect(), 'pakaiOld' => false])
             </div>
             <div class="modal-foot">
               <button type="button" class="btn btn-outline" data-modal-close>Batal</button>

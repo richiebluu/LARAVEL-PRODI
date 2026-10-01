@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Pengumuman extends Model
 {
@@ -70,35 +71,72 @@ class Pengumuman extends Model
         return $this->belongsTo(StaffProdi::class, 'staff_prodi_id', 'id_staff_prodi');
     }
 
-    /** ERD: PENGUMUMAN (N) -- MENERIMA --> MAHASISWA (1), FK pengumuman.nim (penerima pribadi). */
+    /**
+     * Penerima PESAN SISTEM (status "notifikasi") — FK pengumuman.nim.
+     * Pengumuman buatan Staff Prodi memakai relasi penerima() di bawah.
+     */
     public function mahasiswa(): BelongsTo
     {
         return $this->belongsTo(Mahasiswa::class, 'nim', 'nim');
     }
 
+    /**
+     * REVISI DOSEN 01-10-2026: satu pengumuman untuk BANYAK mahasiswa.
+     * PENGUMUMAN (1) --< PENGUMUMAN_PENERIMA >-- (1) MAHASISWA, pivot menyimpan dibaca_pada.
+     */
+    public function penerima(): BelongsToMany
+    {
+        return $this->belongsToMany(Mahasiswa::class, 'pengumuman_penerima', 'pengumuman_id', 'nim', 'id_pengumuman', 'nim')
+            ->withPivot('dibaca_pada')
+            ->withTimestamps();
+    }
+
     /** Pengumuman sungguhan (bukan pesan notifikasi sistem). */
     public function scopePengumuman(Builder $query): Builder
     {
-        return $query->where('status', '!=', self::STATUS_NOTIFIKASI);
+        return $query->where('pengumuman.status', '!=', self::STATUS_NOTIFIKASI);
     }
 
     /** Pengumuman yang sudah dikirim ke mahasiswa. */
     public function scopeTerkirim(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_TERKIRIM);
+        return $query->where('pengumuman.status', self::STATUS_TERKIRIM);
     }
 
-    /** Baris yang tampil sebagai notifikasi di dashboard mahasiswa. */
+    /**
+     * Pesan sistem pribadi milik satu mahasiswa (kolom pengumuman.nim).
+     * Notifikasi pengumuman Staff (banyak penerima) dibaca lewat Mahasiswa::pengumumanDiterima().
+     */
     public function scopeNotifikasiUntuk(Builder $query, string $nim): Builder
     {
-        return $query->where('nim', $nim)
-            ->whereNotNull('notifikasi')
-            ->whereIn('status', [self::STATUS_TERKIRIM, self::STATUS_NOTIFIKASI]);
+        return $query->where('pengumuman.nim', $nim)
+            ->whereNotNull('pengumuman.notifikasi')
+            ->where('pengumuman.status', self::STATUS_NOTIFIKASI);
     }
 
+    /**
+     * Status baca. Untuk pengumuman Staff (banyak penerima) statusnya ada di pivot
+     * pengumuman_penerima.dibaca_pada milik mahasiswa yang sedang login.
+     */
     public function getBelumDibacaAttribute(): bool
     {
+        if ($this->relationLoaded('pivot') && $this->pivot) {
+            return $this->pivot->dibaca_pada === null;
+        }
+
         return $this->dibaca_pada === null;
+    }
+
+    /** Ringkasan penerima untuk tabel Staff, mis. "Rizqi Akbar, Lembang +2 lainnya". */
+    public function getRingkasanPenerimaAttribute(): string
+    {
+        $nama = $this->penerima->pluck('nama');
+
+        if ($nama->isEmpty()) {
+            return '-';
+        }
+
+        return $nama->take(2)->implode(', ').($nama->count() > 2 ? ' +'.($nama->count() - 2).' lainnya' : '');
     }
 
     /** Judul notifikasi di dashboard mahasiswa. */

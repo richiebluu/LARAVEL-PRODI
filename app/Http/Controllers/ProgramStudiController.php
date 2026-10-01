@@ -27,7 +27,8 @@ class ProgramStudiController extends Controller
 
         return view('profil', [
             'prodi' => $prodi,
-            'akreditasi' => Akreditasi::query()->orderByDesc('tanggal_mulai')->orderByDesc('id_akreditasi')->first(),
+            // REVISI DOSEN 01-10-2026: akreditasi yang berlaku (Terakreditasi, tanggal terbaru).
+            'akreditasi' => Akreditasi::utama(),
             'strukturOrganisasi' => $this->struktur($prodi)->take(4),
             'daftarDosen' => Dosen::query()->urutStatus()->orderBy('nama')->get(),
             'jumlahMahasiswa' => $this->statistik->mahasiswaAktif(),

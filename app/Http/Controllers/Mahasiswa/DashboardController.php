@@ -38,10 +38,11 @@ class DashboardController extends Controller
             ? $mahasiswa->prestasi()->latest('created_at')->get()
             : collect();
 
+        // REVISI DOSEN 01-10-2026: pengumuman diterima lewat tabel pengumuman_penerima.
         $pengumuman = $mahasiswa
-            ? $mahasiswa->pengumuman()
+            ? $mahasiswa->pengumumanDiterima()
                 ->terkirim()
-                ->latest('created_at')
+                ->latest('pengumuman.created_at')
                 ->take(4)
                 ->get()
             : collect();
@@ -288,21 +289,19 @@ class DashboardController extends Controller
             $kategori = null;
         }
 
+        // Hanya pengumuman yang penerimanya memuat mahasiswa ini (tabel pengumuman_penerima).
         $daftar = $mahasiswa
-            ? $mahasiswa->pengumuman()
+            ? $mahasiswa->pengumumanDiterima()
                 ->with('prestasi')
                 ->terkirim()
-                ->when($kategori, fn ($k) => $k->where('kategori', $kategori))
-                ->latest('created_at')
+                ->when($kategori, fn ($k) => $k->where('pengumuman.kategori', $kategori))
+                ->latest('pengumuman.created_at')
                 ->get()
             : collect();
 
-        // Tandai sudah dibaca (kolom pengumuman.dibaca_pada sesuai ERD).
+        // Tandai sudah dibaca — status baca milik mahasiswa ini saja (pivot dibaca_pada).
         if ($mahasiswa) {
-            $mahasiswa->pengumuman()
-                ->terkirim()
-                ->whereNull('dibaca_pada')
-                ->update(['dibaca_pada' => now()]);
+            $this->tandaiPengumumanDibaca($mahasiswa->nim);
         }
 
         return view('mahasiswa-pengumuman', [
@@ -325,9 +324,13 @@ class DashboardController extends Controller
         $nim = $this->mahasiswa()?->nim;
 
         if ($nim) {
+            // Pesan sistem pribadi (pengumuman.nim) ...
             Pengumuman::notifikasiUntuk($nim)
                 ->whereNull('dibaca_pada')
                 ->update(['dibaca_pada' => now()]);
+
+            // ... dan pengumuman Staff yang diterima mahasiswa ini (pengumuman_penerima).
+            $this->tandaiPengumumanDibaca($nim);
         }
 
         return redirect()
@@ -335,13 +338,39 @@ class DashboardController extends Controller
             ->with('success', 'Semua notifikasi ditandai sudah dibaca.');
     }
 
+    /**
+     * Notifikasi mahasiswa = gabungan:
+     *  1. pesan sistem pribadi (pengumuman berstatus "notifikasi", kolom pengumuman.nim), dan
+     *  2. pengumuman Staff berstatus terkirim yang penerimanya memuat mahasiswa ini
+     *     (tabel pengumuman_penerima, status baca di pivot dibaca_pada).
+     */
     private function notifikasiUser()
     {
-        // ERD: notifikasi = atribut PENGUMUMAN milik mahasiswa (pengumuman.nim).
-        $nim = $this->mahasiswa()?->nim;
+        $mahasiswa = $this->mahasiswa();
 
-        return $nim
-            ? Pengumuman::notifikasiUntuk($nim)->latest('created_at')->latest('id_pengumuman')->get()
-            : collect();
+        if (! $mahasiswa) {
+            return collect();
+        }
+
+        $sistem = Pengumuman::notifikasiUntuk($mahasiswa->nim)->get();
+
+        $pengumuman = $mahasiswa->pengumumanDiterima()
+            ->terkirim()
+            ->whereNotNull('pengumuman.notifikasi')
+            ->get();
+
+        return $sistem->concat($pengumuman)
+            ->sortByDesc(fn (Pengumuman $n) => sprintf('%s-%010d', optional($n->tanggal_dikirim ?? $n->created_at)->format('YmdHis'), $n->id_pengumuman))
+            ->values();
+    }
+
+    /** Tandai semua pengumuman terkirim untuk mahasiswa ini sebagai sudah dibaca. */
+    private function tandaiPengumumanDibaca(string $nim): void
+    {
+        DB::table('pengumuman_penerima')
+            ->where('nim', $nim)
+            ->whereNull('dibaca_pada')
+            ->whereIn('pengumuman_id', Pengumuman::query()->terkirim()->select('id_pengumuman'))
+            ->update(['dibaca_pada' => now(), 'updated_at' => now()]);
     }
 }

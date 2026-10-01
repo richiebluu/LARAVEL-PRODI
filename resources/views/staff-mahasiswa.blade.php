@@ -58,6 +58,16 @@
                   <option value="{{ $th }}" @selected((string) $angkatan === (string) $th)>{{ $th }}</option>
                 @endforeach
               </select>
+              {{-- REVISI DOSEN 01-10-2026: jumlah data per halaman (default 10). --}}
+              <label for="perPage" style="display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--grey-500); font-weight:500;">
+                Tampilkan
+                <select id="perPage" name="per_page" data-auto-submit style="padding:10px 14px; border-radius:10px; border:1.5px solid var(--grey-300); font-size:.85rem;">
+                  @foreach ($pilihanPerHalaman as $n)
+                    <option value="{{ $n }}" @selected($perHalaman === $n)>{{ $n }}</option>
+                  @endforeach
+                </select>
+                data
+              </label>
             </form>
             <button class="btn btn-outline" data-modal-open="modalImporMahasiswa"><i class="fa-solid fa-file-import"></i> Impor CSV</button>
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahMahasiswa"><i class="fa-solid fa-plus"></i> Tambah Mahasiswa</button>
@@ -123,14 +133,32 @@
             </tbody>
           </table>
         </div>
+        {{-- Navigasi pagination Laravel (URL membawa q, angkatan, dan per_page). --}}
+        @php
+          $halAwal = max(1, $daftarMahasiswa->currentPage() - 2);
+          $halAkhir = min($daftarMahasiswa->lastPage(), $daftarMahasiswa->currentPage() + 2);
+        @endphp
         <div class="toolbar" style="margin:18px 0 0 0;">
-          <span class="form-hint" id="infoHal">Halaman {{ $daftarMahasiswa->currentPage() }} dari {{ $daftarMahasiswa->lastPage() }}</span>
-          <div style="display:flex; gap:8px;">
+          <span class="form-hint" id="infoHal">
+            @if ($daftarMahasiswa->total())
+              Menampilkan {{ $daftarMahasiswa->firstItem() }}–{{ $daftarMahasiswa->lastItem() }} dari {{ $daftarMahasiswa->total() }} data
+              &middot; Halaman {{ $daftarMahasiswa->currentPage() }} dari {{ $daftarMahasiswa->lastPage() }}
+            @else
+              Halaman 1 dari 1
+            @endif
+          </span>
+          <nav class="pager" aria-label="Navigasi halaman data mahasiswa" style="display:flex; gap:8px; flex-wrap:wrap;">
             <a class="btn btn-outline btn-sm {{ $daftarMahasiswa->onFirstPage() ? 'disabled' : '' }}"
-               href="{{ $daftarMahasiswa->previousPageUrl() ?? '#' }}"><i class="fa-solid fa-chevron-left"></i> Sebelumnya</a>
+               href="{{ $daftarMahasiswa->previousPageUrl() ?? '#' }}" @if ($daftarMahasiswa->onFirstPage()) aria-disabled="true" @endif><i class="fa-solid fa-chevron-left"></i> Sebelumnya</a>
+            @if ($daftarMahasiswa->lastPage() > 1)
+              @foreach ($daftarMahasiswa->getUrlRange($halAwal, $halAkhir) as $hal => $urlHal)
+                <a class="btn btn-sm {{ $hal === $daftarMahasiswa->currentPage() ? 'btn-primary' : 'btn-outline' }}"
+                   href="{{ $urlHal }}" @if ($hal === $daftarMahasiswa->currentPage()) aria-current="page" @endif>{{ $hal }}</a>
+              @endforeach
+            @endif
             <a class="btn btn-outline btn-sm {{ ! $daftarMahasiswa->hasMorePages() ? 'disabled' : '' }}"
-               href="{{ $daftarMahasiswa->nextPageUrl() ?? '#' }}">Berikutnya <i class="fa-solid fa-chevron-right"></i></a>
-          </div>
+               href="{{ $daftarMahasiswa->nextPageUrl() ?? '#' }}" @if (! $daftarMahasiswa->hasMorePages()) aria-disabled="true" @endif>Berikutnya <i class="fa-solid fa-chevron-right"></i></a>
+          </nav>
         </div>
       </div>
 

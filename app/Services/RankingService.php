@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\DB;
  *       C2 Prestasi Akademik     = poin prestasi akademik disetujui
  *       C3 Prestasi Non-Akademik = poin prestasi non-akademik disetujui
  *       C4 Keaktifan Organisasi  = poin jabatan organisasi (tabel organisasi)
- *  2. Bobot tetap dari tabel ranking_bobot (C1 .35, C2 .30, C3 .20, C4 .15).
+ *  2. Bobot dari tabel ranking_bobot = hasil AHP (C1 .48, C2 .29, C3 .15, C4 .08).
+ *     Perhitungan AHP-nya ada di App\Http\Controllers\Staff\RankingController::hitungAHP().
  *  3. Normalisasi benefit: Rij = Xij / max(Xj).
  *  4. Nilai preferensi: Vi = Σ Wj × Rij.
  *  5. Urutkan Vi menurun.
@@ -63,14 +64,37 @@ class RankingService
         return $bobot;
     }
 
-    /** Tulis bobot tetap (config/saw.php) ke tabel ranking_bobot. */
+    /**
+     * Tulis bobot tetap (config/saw.php = hasil AHP yang dibulatkan) ke tabel ranking_bobot.
+     * Dasar pembobotan bawaan hanya diisi bila masih kosong, sehingga teks yang sudah
+     * disunting Staff Prodi tidak tertimpa.
+     */
     public function sinkronBobot(): void
     {
         foreach (config('saw.kriteria') as $kode => $k) {
-            RankingBobot::updateOrCreate(
+            $baris = RankingBobot::updateOrCreate(
                 ['kode' => $kode],
                 ['kriteria' => $k['nama'], 'bobot' => $k['bobot'], 'tipe_bobot' => $k['tipe']]
             );
+
+            if (blank($baris->dasar_pembobotan) && filled($k['dasar'] ?? null)) {
+                $baris->update(['dasar_pembobotan' => $k['dasar']]);
+            }
+        }
+    }
+
+    /**
+     * Simpan bobot hasil AHP ke tabel ranking_bobot (dipanggil RankingController
+     * setelah AHP dihitung dan dinyatakan konsisten).
+     *
+     * @param  array<string, float>  $bobotPerKode  mis. ['C1' => 0.48, 'C2' => 0.29, ...]
+     */
+    public function terapkanBobot(array $bobotPerKode): void
+    {
+        $this->bobot(); // pastikan keempat baris kriteria sudah ada
+
+        foreach ($bobotPerKode as $kode => $nilai) {
+            RankingBobot::where('kode', $kode)->update(['bobot' => $nilai]);
         }
     }
 

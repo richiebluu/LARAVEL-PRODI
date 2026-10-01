@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('akreditasi') }}">
     <div class="container">
       <h1>Akreditasi</h1>
       <p>Status, peringkat, dan masa berlaku akreditasi Program Studi Teknologi Informasi.</p>
@@ -32,7 +33,7 @@
           </div>
           <div>
             <span class="eyebrow" style="background:rgba(255,255,255,.14); color:#fff;"><i class="fa-solid fa-certificate"></i> Sertifikat Akreditasi</span>
-            <h2>Mutu Program Studi yang Terakreditasi</h2>
+            <h2>{{ $akreditasi->berlaku ? 'Mutu Program Studi yang Terakreditasi' : 'Status Akreditasi Program Studi' }}</h2>
             <p>Peringkat akreditasi ditetapkan oleh lembaga akreditasi mandiri bidang informatika dan komputer, serta ditinjau secara berkala.</p>
             <dl>
               <div><dt>Lembaga Akreditasi</dt><dd>{{ $akreditasi->lembaga ?? '-' }}</dd></div>
@@ -72,8 +73,12 @@
         @forelse ($riwayat as $item)
           <div class="timeline-item reveal">
             <div class="timeline-year">{{ $item->tahun ?? '-' }}</div>
-            <h4>Peringkat {{ $item->peringkat }}</h4>
-            <p>{{ $item->lembaga ?? 'Lembaga akreditasi' }} &middot; SK {{ $item->nomor_sk ?? '-' }}</p>
+            <h4>Peringkat {{ $item->peringkat }}
+              @if ($akreditasi && $akreditasi->is($item))
+                <span class="eyebrow" style="font-size:.7rem; padding:3px 10px; margin-left:6px;"><i class="fa-solid fa-circle-check"></i> Berlaku</span>
+              @endif
+            </h4>
+            <p>{{ $item->lembaga ?? 'Lembaga akreditasi' }} &middot; SK {{ $item->nomor_sk ?? '-' }} &middot; {{ $item->status }}</p>
           </div>
         @empty
           <div class="empty-public">

@@ -45,10 +45,13 @@ class ErdTest extends TestCase
         'struktur_organisasi' => ['id_struktur_organisasi', 'program_studi_id', 'dosen_id', 'nama', 'jabatan', 'foto', 'created_at', 'updated_at'],
         'organisasi' => ['id_organisasi', 'nim', 'nama_organisasi', 'jabatan', 'created_at', 'updated_at'],
         'prestasi' => ['id_prestasi', 'nim', 'staff_prodi_id', 'judul', 'kategori', 'tingkat', 'penyelenggara', 'tanggal', 'dokumen', 'deskripsi', 'status', 'catatan', 'created_at', 'updated_at'],
-        'ranking_bobot' => ['id_ranking_bobot', 'kode', 'kriteria', 'bobot', 'tipe_bobot', 'created_at', 'updated_at'],
+        // REVISI DOSEN 01-10-2026: + dasar_pembobotan (alasan bobot AHP).
+        'ranking_bobot' => ['id_ranking_bobot', 'kode', 'kriteria', 'bobot', 'tipe_bobot', 'dasar_pembobotan', 'created_at', 'updated_at'],
         'ranking' => ['id_ranking', 'nim', 'ranking_bobot_id', 'nilai_ipk', 'poin_prestasi_akademik', 'poin_prestasi_nonakademik', 'poin_keaktifan_organisasi',
             'normalisasi_nilai_ipk', 'normalisasi_prestasi_akademik', 'normalisasi_prestasi_nonakademik', 'normalisasi_keaktifan_organisasi',
             'peringkat', 'nilai_akhir', 'tahun', 'created_at', 'updated_at'],
+        // REVISI DOSEN 01-10-2026: satu pengumuman -> banyak penerima.
+        'pengumuman_penerima' => ['id_pengumuman_penerima', 'pengumuman_id', 'nim', 'dibaca_pada', 'created_at', 'updated_at'],
         'pengumuman' => ['id_pengumuman', 'prestasi_id', 'kategori', 'staff_prodi_id', 'nim', 'judul', 'isi', 'status', 'tanggal_dikirim', 'notifikasi', 'dibaca_pada', 'created_at', 'updated_at'],
         'prospek_lulusan' => ['id_prospek_lulusan', 'staff_prodi_id', 'nama', 'kategori', 'deskripsi', 'ikon', 'status', 'created_at', 'updated_at'],
         'testimoni' => ['id_testimoni', 'staff_prodi_id', 'nama', 'tahun_kelulusan', 'nama_perusahaan', 'jabatan', 'foto', 'isi', 'created_at', 'updated_at'],
@@ -74,6 +77,8 @@ class ErdTest extends TestCase
         'pengumuman.prestasi_id' => 'prestasi.id_prestasi',
         'pengumuman.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'pengumuman.nim' => 'mahasiswa.nim',
+        'pengumuman_penerima.pengumuman_id' => 'pengumuman.id_pengumuman',
+        'pengumuman_penerima.nim' => 'mahasiswa.nim',
         'prospek_lulusan.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'testimoni.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'kegiatan_mahasiswa.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
@@ -93,7 +98,7 @@ class ErdTest extends TestCase
             $this->assertSame($harap, $ada, 'kolom tabel '.$tabel);
         }
 
-        foreach (['pengajuan_perubahan', 'pengumuman_penerima', 'notifikasi', 'verifikasi', 'publikasi', 'profil_lulusan'] as $lama) {
+        foreach (['pengajuan_perubahan', 'notifikasi', 'verifikasi', 'publikasi', 'profil_lulusan'] as $lama) {
             $this->assertFalse(Schema::hasTable($lama), 'tabel di luar ERD: '.$lama);
         }
     }

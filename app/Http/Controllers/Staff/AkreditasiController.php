@@ -12,9 +12,12 @@ class AkreditasiController extends Controller
 {
     public function index()
     {
+        // Riwayat lengkap tetap tersedia untuk Staff Prodi (urut tanggal terbaru),
+        // sedangkan $akreditasiUtama = data yang tampil di halaman publik.
         return view('staff-akreditasi', [
             'prodi' => ProgramStudi::first(),
-            'daftarAkreditasi' => Akreditasi::orderByDesc('tanggal_mulai')->orderByDesc('id_akreditasi')->get(),
+            'daftarAkreditasi' => Akreditasi::query()->terbaru()->get(),
+            'akreditasiUtama' => Akreditasi::utama(),
         ]);
     }
 

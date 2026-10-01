@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('berita') }}">
     <div class="container">
       <h1>Berita</h1>
       <p>Kegiatan dan informasi terbaru Program Studi Teknologi Informasi.</p>

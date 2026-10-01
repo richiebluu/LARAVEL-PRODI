@@ -36,10 +36,8 @@ class HomeController extends Controller
 
         $dosen = Dosen::aktif()->orderBy('nama')->take(4)->get();
 
-        $akreditasi = Akreditasi::query()
-            ->orderByDesc('tanggal_mulai')
-            ->orderByDesc('id_akreditasi')
-            ->first();
+        // REVISI DOSEN 01-10-2026: akreditasi berstatus Terakreditasi dengan tanggal terbaru.
+        $akreditasi = Akreditasi::utama();
 
         $ranking = $this->ranking->untukPublik()->take(5);
 

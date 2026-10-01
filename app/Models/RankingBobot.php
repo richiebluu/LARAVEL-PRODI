@@ -20,6 +20,8 @@ class RankingBobot extends Model
         'kriteria',
         'bobot',
         'tipe_bobot',
+        // REVISI DOSEN 01-10-2026: alasan/dasar mengapa kriteria diberi bobot tersebut.
+        'dasar_pembobotan',
     ];
 
     protected $casts = [
@@ -27,10 +29,17 @@ class RankingBobot extends Model
     ];
 
     /**
-     * Bobot kriteria bersifat TETAP (revisi dosen): nilainya berasal dari
-     * config/saw.php (salinan sheet "Bobot Kriteria" Excel) dan tidak dapat
-     * diubah lewat interface. Tidak ada route/action untuk mengedit bobot.
+     * Bobot kriteria bersifat TETAP (revisi dosen): nilainya adalah hasil AHP
+     * (RankingController::hitungAHP) yang dibulatkan 2 desimal, dan tidak dapat
+     * diketik manual lewat interface. Yang dapat disunting Staff Prodi hanya
+     * teks `dasar_pembobotan` (alasan pembobotan untuk dokumentasi/laporan).
      */
+
+    /** Persentase bobot, mis. 0.48 -> "48". */
+    public function getPersenAttribute(): string
+    {
+        return rtrim(rtrim(number_format((float) $this->bobot * 100, 2), '0'), '.');
+    }
 
     /** ERD: RANKING_BOBOT (1) -- MENGGUNAKAN --> RANKING (N). */
     public function ranking(): HasMany

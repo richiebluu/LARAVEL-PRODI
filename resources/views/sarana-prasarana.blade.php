@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('sarana-prasarana', optional($daftarSarana->first(fn ($s) => filled($s->foto_url)))->foto_url) }}">
     <div class="container">
       <h1>Sarana &amp; Prasarana</h1>
       <p>Laboratorium dan fasilitas penunjang pembelajaran Program Studi Teknologi Informasi.</p>

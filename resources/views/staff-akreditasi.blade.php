@@ -40,10 +40,10 @@
         </div>
       @endif
 
-      @php $terbaru = $daftarAkreditasi->first(); @endphp
+      {{-- REVISI DOSEN 01-10-2026: badge/halaman publik memakai akreditasi UTAMA
+           (status Terakreditasi + tanggal penetapan terbaru), bukan baris pertama/ID terakhir. --}}
+      @php $terbaru = $akreditasiUtama; @endphp
 
-      {{-- REVISI 28-09-2026 tahap 2 ("REVISI BARU(1).docx"): tabel/list data akreditasi dipindah ke ATAS,
-           form tambah + pratinjau badge di bawahnya. Komponen & CRUD tidak berubah. --}}
       <div class="panel">
         <div class="panel-head"><h2>Riwayat Akreditasi <span style="color:var(--grey-500); font-weight:500; font-size:.85rem;">({{ $daftarAkreditasi->count() }} data)</span></h2>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -56,12 +56,16 @@
             <tbody>
               @forelse ($daftarAkreditasi as $a)
                 <tr>
-                  <td><strong>{{ $a->peringkat }}</strong></td>
+                  <td><strong>{{ $a->peringkat }}</strong>
+                    @if ($terbaru && $terbaru->is($a))
+                      <div style="margin-top:4px;"><span class="badge badge-blue"><i class="fa-solid fa-globe"></i> Tampil di publik</span></div>
+                    @endif
+                  </td>
                   <td>{{ $a->lembaga ?? '-' }}</td>
                   <td>{{ $a->nomor_sk ?? '-' }}</td>
                   <td>{{ optional($a->tanggal_mulai)->translatedFormat('d M Y') ?? '-' }}</td>
                   <td>{{ optional($a->tanggal_berakhir)->translatedFormat('d M Y') ?? '-' }}</td>
-                  <td><span class="badge {{ $a->status === 'Terakreditasi' ? 'badge-green' : 'badge-grey' }}">{{ $a->status }}</span></td>
+                  <td><span class="badge {{ $a->berlaku ? 'badge-green' : ($a->status === \App\Models\Akreditasi::STATUS_TIDAK_TERAKREDITASI ? 'badge-red' : 'badge-grey') }}">{{ $a->status }}</span></td>
                   <td class="actions">
                     <button class="btn btn-outline btn-sm btn-icon" title="Edit"
                       data-modal-open="modalEditAkreditasi"
@@ -109,8 +113,10 @@
               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Akreditasi</button>
             </div>
             <p class="form-hint" style="margin-top:12px;">
-              Status akreditasi (Terakreditasi / Masa Berlaku Berakhir) dihitung otomatis dari tanggal berakhir,
-              dan tahun penetapan diambil dari tanggal mulai — keduanya tidak perlu diisi manual.
+              Status akreditasi dihitung otomatis: <strong>Terakreditasi</strong> bila sudah berlaku dan belum lewat tanggal berakhir,
+              <strong>Belum Berlaku</strong> bila tanggal mulai di masa depan, <strong>Masa Berlaku Berakhir</strong> bila tanggal berakhir sudah lewat,
+              dan <strong>Tidak Terakreditasi</strong> bila peringkat diisi "Tidak Terakreditasi". Tahun penetapan diambil dari tanggal mulai.
+              Halaman publik menampilkan akreditasi berstatus Terakreditasi dengan tanggal mulai <strong>paling baru</strong>.
             </p>
           </form>
         </div>
@@ -121,7 +127,11 @@
             <b id="prevPeringkat">{{ $terbaru->peringkat ?? '-' }}</b>
             <span id="prevStatus">{{ $terbaru->status ?? 'Belum ada data' }}</span>
           </div>
-          <p class="form-hint" style="text-align:center; margin-top:18px;">Badge ini yang tampil pada beranda dan halaman akreditasi.</p>
+          <p class="form-hint" style="text-align:center; margin-top:18px;">Badge ini yang tampil pada beranda dan halaman akreditasi
+            @if ($terbaru)
+              <br>(SK {{ $terbaru->nomor_sk ?? '-' }}, mulai {{ optional($terbaru->tanggal_mulai)->translatedFormat('d M Y') ?? '-' }}).
+            @endif
+          </p>
         </div>
       </div>
 

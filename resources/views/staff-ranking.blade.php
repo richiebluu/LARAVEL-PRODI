@@ -20,7 +20,7 @@
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
             <h1>Ranking Mahasiswa</h1>
-            <div class="subtitle">Perhitungan metode SAW dengan empat kriteria dan bobot tetap.</div>
+            <div class="subtitle">Bobot kriteria dengan metode AHP, perangkingan dengan metode SAW.</div>
           </div>
         </div>
         <div class="admin-profile">
@@ -37,32 +37,165 @@
         <div class="alert-error"><strong><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first() }}</strong></div>
       @endif
 
-      {{-- ===== BOBOT KRITERIA (TETAP / READ-ONLY sesuai revisi dosen) ===== --}}
+      {{-- ===== BOBOT KRITERIA + DASAR PEMBOBOTAN (REVISI DOSEN 01-10-2026) ===== --}}
       <div class="panel">
         <div class="panel-head">
-          <h2>Bobot Kriteria</h2>
+          <h2>Bobot Kriteria &amp; Dasar Pembobotan</h2>
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-            <span class="badge badge-grey"><i class="fa-solid fa-lock"></i> Bobot tetap</span>
+            <span class="badge badge-grey"><i class="fa-solid fa-lock"></i> Bobot hasil AHP</span>
             <span class="badge {{ abs($totalBobot - 1) < 0.0001 ? 'badge-green' : 'badge-red' }}" id="totalBobot">Total bobot: {{ rtrim(rtrim(number_format($totalBobot * 100, 2), '0'), '.') }}%</span>
+            <button type="button" class="btn btn-outline btn-sm" data-modal-open="modalDasarPembobotan"><i class="fa-solid fa-pen"></i> Ubah Dasar Pembobotan</button>
           </div>
         </div>
-        <div class="form-grid">
-          @foreach ($kriteria as $kode => $k)
-            <div class="form-group">
-              <label for="bobot{{ $kode }}">{{ $k['nama'] }} ({{ $kode }}) &mdash; Bobot (%)</label>
-              <input type="text" id="bobot{{ $kode }}" class="input-terkunci"
-                     value="{{ rtrim(rtrim(number_format((float) ($bobot->get($kode)->bobot ?? 0) * 100, 2), '0'), '.') }}"
-                     disabled readonly aria-readonly="true">
-              <div class="form-hint">Sumber nilai: {{ $k['sumber'] }} &middot; Tipe: {{ ucfirst($bobot->get($kode)->tipe_bobot ?? $k['tipe']) }}</div>
-            </div>
-          @endforeach
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Kode</th><th>Kriteria</th><th>Bobot</th><th>Dasar Pembobotan</th></tr></thead>
+            <tbody>
+              @foreach ($kriteria as $kode => $k)
+                @php $b = $bobot->get($kode); @endphp
+                <tr>
+                  <td><strong>{{ $kode }}</strong></td>
+                  <td style="min-width:170px;">
+                    <strong>{{ $k['nama'] }}</strong>
+                    <div style="font-size:.78rem; color:var(--grey-500);">Sumber: {{ $k['sumber'] }} &middot; {{ ucfirst($b->tipe_bobot ?? $k['tipe']) }}</div>
+                  </td>
+                  <td style="white-space:nowrap;">
+                    <span class="badge badge-blue" style="font-size:.85rem;">{{ $b?->persen ?? '0' }}%</span>
+                    <div style="font-size:.75rem; color:var(--grey-500); margin-top:4px;">AHP: {{ number_format($ahp['priority_vector'][$kode], 4) }}</div>
+                  </td>
+                  <td style="font-size:.85rem; line-height:1.6; min-width:280px;">
+                    {{ $b?->dasar_pembobotan ?: ($k['dasar'] ?? '-') }}
+                    <div style="font-size:.78rem; color:var(--grey-500); margin-top:6px;"><i class="fa-solid fa-scale-balanced"></i> {{ $dasarAhp[$kode] ?? '' }}</div>
+                  </td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
         </div>
         <p class="form-hint" style="margin-top:14px;">
-          Bobot ditetapkan sesuai acuan perhitungan SAW Program Studi dan tersimpan pada tabel <code>ranking_bobot</code>.
-          Bobot hanya ditampilkan dan <strong>tidak dapat diubah</strong> melalui website.
+          Bobot ditentukan dengan metode <strong>AHP</strong> (lihat panel Perhitungan Bobot AHP di bawah), dibulatkan 2 desimal,
+          lalu disimpan pada tabel <code>ranking_bobot</code> dan dipakai metode <strong>SAW</strong> untuk perangkingan.
+          Angka bobot <strong>tidak dapat diketik manual</strong>; yang dapat diubah hanya teks dasar pembobotan
+          (kolom <code>dasar_pembobotan</code>) sebagai dokumentasi/laporan.
           Poin Prestasi Akademik dan Prestasi Non-Akademik dihitung dari prestasi yang <strong>sudah disetujui</strong>,
           Keaktifan Organisasi dari jabatan organisasi, dan Nilai Akademik dari IPK mahasiswa.
         </p>
+      </div>
+
+      {{-- ===== PERHITUNGAN BOBOT AHP (REVISI DOSEN 01-10-2026) =====
+           Angka berasal dari App\Http\Controllers\Staff\RankingController::hitungAHP(). --}}
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Perhitungan Bobot AHP</h2>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <span class="badge {{ $ahp['konsisten'] ? 'badge-green' : 'badge-red' }}">
+              <i class="fa-solid {{ $ahp['konsisten'] ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+              CR = {{ number_format($ahp['cr'], 4) }} &mdash; {{ $ahp['konsisten'] ? 'Konsisten' : 'Tidak konsisten' }}
+            </span>
+            <span class="badge {{ $bobotSesuaiAhp ? 'badge-green' : 'badge-grey' }}">
+              {{ $bobotSesuaiAhp ? 'Bobot tersimpan = hasil AHP' : 'Bobot tersimpan belum sama dengan AHP — tekan Hitung & Simpan Ranking' }}
+            </span>
+          </div>
+        </div>
+
+        <h4 style="margin:4px 0 10px 0;">1. Matriks Perbandingan Berpasangan (skala Saaty 1–9)</h4>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Kriteria</th>@foreach ($ahp['kode'] as $kolom)<th>{{ $kolom }}</th>@endforeach</tr></thead>
+            <tbody>
+              @foreach ($ahp['kode'] as $baris)
+                <tr>
+                  <td><strong>{{ $baris }}</strong> &middot; {{ $kriteria[$baris]['nama'] }}</td>
+                  @foreach ($ahp['kode'] as $kolom)
+                    @php $nilai = $ahp['matriks'][$baris][$kolom]; @endphp
+                    <td>{{ $nilai >= 1 ? rtrim(rtrim(number_format($nilai, 2), '0'), '.') : '1/'.round(1 / $nilai) }}</td>
+                  @endforeach
+                </tr>
+              @endforeach
+              <tr>
+                <td><strong>2. Jumlah kolom</strong></td>
+                @foreach ($ahp['kode'] as $kolom)<td><strong>{{ number_format($ahp['jumlah_kolom'][$kolom], 4) }}</strong></td>@endforeach
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="margin:22px 0 10px 0;">3–4. Normalisasi Matriks &amp; Priority Vector (Bobot)</h4>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Kriteria</th>@foreach ($ahp['kode'] as $kolom)<th>{{ $kolom }}</th>@endforeach<th>Jumlah Baris</th><th>Priority Vector (w)</th><th>Bobot Dipakai</th></tr></thead>
+            <tbody>
+              @foreach ($ahp['kode'] as $baris)
+                <tr>
+                  <td><strong>{{ $baris }}</strong></td>
+                  @foreach ($ahp['kode'] as $kolom)<td>{{ number_format($ahp['normalisasi'][$baris][$kolom], 4) }}</td>@endforeach
+                  <td>{{ number_format($ahp['jumlah_baris_normalisasi'][$baris], 4) }}</td>
+                  <td><strong>{{ number_format($ahp['priority_vector'][$baris], 4) }}</strong></td>
+                  <td><span class="badge badge-blue">{{ number_format($ahp['bobot_dibulatkan'][$baris], 2) }}</span></td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="margin:22px 0 10px 0;">5–6. Weighted Sum Vector &amp; Consistency Vector</h4>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Kriteria</th><th>Weighted Sum (A &times; w)</th><th>Priority Vector (w)</th><th>Consistency Vector (WSV / w)</th></tr></thead>
+            <tbody>
+              @foreach ($ahp['kode'] as $baris)
+                <tr>
+                  <td><strong>{{ $baris }}</strong></td>
+                  <td>{{ number_format($ahp['weighted_sum'][$baris], 4) }}</td>
+                  <td>{{ number_format($ahp['priority_vector'][$baris], 4) }}</td>
+                  <td>{{ number_format($ahp['consistency_vector'][$baris], 4) }}</td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="margin:22px 0 10px 0;">7–10. Uji Konsistensi</h4>
+        <dl class="kv">
+          <dt>&lambda;<sub>max</sub> = &Sigma;CV / n</dt><dd>{{ number_format($ahp['lambda_max'], 4) }}</dd>
+          <dt>CI = (&lambda;<sub>max</sub> &minus; n) / (n &minus; 1)</dt><dd>{{ number_format($ahp['ci'], 4) }}</dd>
+          <dt>RI (n = {{ $ahp['n'] }})</dt><dd>{{ number_format($ahp['ri'], 2) }}</dd>
+          <dt>CR = CI / RI</dt><dd><strong>{{ number_format($ahp['cr'], 4) }}</strong></dd>
+          <dt>Keputusan</dt><dd>{{ $ahp['konsisten'] ? 'Konsisten (CR ≤ '.$ahp['batas_cr'].'), bobot layak dipakai' : 'Tidak konsisten (CR > '.$ahp['batas_cr'].'), perbandingan harus diperbaiki' }}</dd>
+        </dl>
+        <p class="form-hint" style="margin-top:14px;">
+          Kode perhitungan: <code>app/Http/Controllers/Staff/RankingController.php</code> &rarr; method <code>hitungAHP()</code>.
+          Nilai perbandingan berpasangan: <code>config/saw.php</code> &rarr; <code>ahp.perbandingan</code>.
+          Saat tombol <strong>Hitung &amp; Simpan Ranking</strong> ditekan, bobot hasil AHP disimpan ke <code>ranking_bobot</code>
+          lalu dipakai perhitungan SAW di bawah.
+        </p>
+      </div>
+
+      {{-- Modal ubah dasar pembobotan (teks saja; angka bobot tetap hasil AHP). --}}
+      <div class="modal-overlay" id="modalDasarPembobotan" @if ($errors->has('dasar') || $errors->has('dasar.*')) data-buka-otomatis @endif>
+        <div class="modal-box">
+          <form method="POST" action="{{ route('staff-ranking.dasar') }}">
+            @csrf
+            @method('PUT')
+            <div class="modal-head"><h3>Ubah Dasar Pembobotan</h3>
+              <button type="button" class="modal-close" data-modal-close><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="modal-body">
+              <div class="form-grid">
+                @foreach ($kriteria as $kode => $k)
+                  <div class="form-group full">
+                    <label for="dasar{{ $kode }}">{{ $kode }} &middot; {{ $k['nama'] }} &mdash; Bobot {{ $bobot->get($kode)?->persen ?? '0' }}%</label>
+                    <textarea id="dasar{{ $kode }}" name="dasar[{{ $kode }}]" rows="4" required minlength="20" maxlength="2000">{{ old('dasar.'.$kode, $bobot->get($kode)?->dasar_pembobotan ?: ($k['dasar'] ?? '')) }}</textarea>
+                  </div>
+                @endforeach
+              </div>
+              <p class="form-hint" style="margin-top:10px;">Angka bobot tidak berubah (hasil AHP). Teks ini menjelaskan alasan bobot untuk dokumentasi dan laporan.</p>
+            </div>
+            <div class="modal-foot">
+              <button type="button" class="btn btn-outline" data-modal-close>Batal</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Dasar Pembobotan</button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {{-- ===== SKEMA POIN (acuan sheet "Skema Skor") ===== --}}

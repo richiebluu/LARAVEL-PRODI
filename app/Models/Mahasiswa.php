@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Mahasiswa extends Model
@@ -96,10 +97,25 @@ class Mahasiswa extends Model
         return $this->hasMany(Ranking::class, 'nim', 'nim');
     }
 
-    /** ERD: MAHASISWA (1) -- MENERIMA --> PENGUMUMAN (N), FK pengumuman.nim. */
+    /**
+     * Pesan sistem pribadi (pengumuman berstatus "notifikasi", mis. hasil verifikasi
+     * prestasi) — FK pengumuman.nim.
+     */
     public function pengumuman(): HasMany
     {
         return $this->hasMany(Pengumuman::class, 'nim', 'nim');
+    }
+
+    /**
+     * REVISI DOSEN 01-10-2026: pengumuman Staff Prodi yang diterima mahasiswa ini.
+     * MAHASISWA (N) -- MENERIMA -- (N) PENGUMUMAN lewat tabel pivot pengumuman_penerima,
+     * lengkap dengan status baca (pivot.dibaca_pada) per mahasiswa.
+     */
+    public function pengumumanDiterima(): BelongsToMany
+    {
+        return $this->belongsToMany(Pengumuman::class, 'pengumuman_penerima', 'nim', 'pengumuman_id', 'nim', 'id_pengumuman')
+            ->withPivot('dibaca_pada')
+            ->withTimestamps();
     }
 
     /** Label status yang ditampilkan (contoh: "do" -> "DO"). */
@@ -116,6 +132,26 @@ class Mahasiswa extends Model
     public function scopeBerprestasi(Builder $query): Builder
     {
         return $query->whereHas('prestasiDisetujui');
+    }
+
+    /**
+     * REVISI DOSEN 01-10-2026: mahasiswa yang email-nya memakai domain institusi
+     * mahasiswa (@mhs.politala.ac.id, config auth.domain_email.mahasiswa).
+     * Dicek pada email profil (mahasiswa.email) maupun email akun login (users.email).
+     */
+    public function scopeEmailInstitusi(Builder $query): Builder
+    {
+        $akhiran = '%@'.strtolower((string) User::domainEmail('mahasiswa'));
+
+        return $query->where(fn ($q) => $q
+            ->whereRaw('LOWER(mahasiswa.email) LIKE ?', [$akhiran])
+            ->orWhereHas('user', fn ($u) => $u->whereRaw('LOWER(email) LIKE ?', [$akhiran])));
+    }
+
+    /** Email yang dipakai untuk pengumuman (email akun login = email profil). */
+    public function getEmailKontakAttribute(): ?string
+    {
+        return $this->user?->email ?? $this->email;
     }
 
     /** URL foto siap pakai (hasil upload atau URL luar). */

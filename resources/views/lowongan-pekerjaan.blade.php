@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('lowongan-pekerjaan') }}">
     <div class="container">
       <h1>Lowongan Kerja</h1>
       <p>Informasi lowongan kerja dan magang bagi mahasiswa serta alumni Teknologi Informasi.</p>

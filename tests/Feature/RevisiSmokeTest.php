@@ -184,26 +184,26 @@ class RevisiSmokeTest extends TestCase
         // Pengumuman: hanya mahasiswa berprestasi
         $tanpaPrestasi = Mahasiswa::create(['user_id' => User::create(['name' => 'Z', 'email' => '777@mhs.politala.ac.id', 'password' => 'x', 'role' => 'mahasiswa'])->id_user,
             'nim' => '777', 'nama' => 'Z', 'status_mahasiswa' => 'aktif']);
-        $this->post('/staff-pengumuman', ['nim' => $tanpaPrestasi->nim, 'kategori' => 'Prestasi Akademik', 'judul' => 'a', 'isi' => 'b', 'status' => 'terkirim'])
-            ->assertSessionHasErrors('nim');
-        $this->get('/staff-pengumuman')->assertDontSee('Z - 777');
+        $this->post('/staff-pengumuman', ['penerima' => [$tanpaPrestasi->nim], 'kategori' => 'Prestasi Akademik', 'judul' => 'a', 'isi' => 'b', 'status' => 'terkirim'])
+            ->assertSessionHasErrors('penerima');
+        $this->assertSame(0, Pengumuman::where('judul', 'a')->count());
 
-        $this->post('/staff-pengumuman', ['nim' => $m->nim, 'kategori' => 'Nilai Akademik', 'judul' => 'a', 'isi' => 'b', 'status' => 'terkirim'])
+        $this->post('/staff-pengumuman', ['penerima' => [$m->nim], 'kategori' => 'Nilai Akademik', 'judul' => 'a', 'isi' => 'b', 'status' => 'terkirim'])
             ->assertSessionHasErrors('kategori');
         $prestasi = $m->prestasiDisetujui()->first();
-        $this->post('/staff-pengumuman', ['nim' => $m->nim, 'prestasi_id' => $prestasi->id_prestasi, 'kategori' => 'Prestasi Akademik',
+        $this->post('/staff-pengumuman', ['penerima' => [$m->nim], 'prestasi_id' => $prestasi->id_prestasi, 'kategori' => 'Prestasi Akademik',
             'judul' => 'Selamat', 'isi' => 'Info di website', 'status' => 'terkirim'])->assertSessionHasNoErrors();
         $baru = Pengumuman::latest('id_pengumuman')->first();
         $this->assertSame($prestasi->kategori, $baru->kategori);
-        // ERD: MAHASISWA 1 -- MENERIMA -- N PENGUMUMAN (FK nim) + atribut notifikasi
-        $this->assertSame($m->nim, $baru->nim);
+        // REVISI DOSEN 01-10-2026: penerima di tabel pengumuman_penerima + atribut notifikasi
+        $this->assertSame([$m->nim], $baru->penerima->pluck('nim')->all());
         $this->assertSame('Selamat', $baru->notifikasi);
-        $this->assertNull($baru->dibaca_pada);
+        $this->assertNull($baru->penerima->first()->pivot->dibaca_pada);
 
         $this->post('/logout');
         $this->actingAs($m->user);
         $this->get('/mahasiswa-notifikasi')->assertSee('Pengumuman baru untuk Anda')->assertSee('Selamat');
         $this->get('/mahasiswa-pengumuman')->assertSee('Selamat');
-        $this->assertNotNull($baru->fresh()->dibaca_pada);
+        $this->assertNotNull($baru->fresh()->penerima->first()->pivot->dibaca_pada);
     }
 }

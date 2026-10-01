@@ -14,7 +14,8 @@
 
   @include('partials.public-navbar')
 
-  <section class="page-hero">
+  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('kegiatan-mahasiswa', optional(collect($daftarKegiatan->items())->first(fn ($k) => filled($k->foto_url)))->foto_url) }}">
     <div class="container">
       <h1>Kegiatan Mahasiswa</h1>
       <p>Aktivitas dan kegiatan mahasiswa Program Studi Teknologi Informasi.</p>

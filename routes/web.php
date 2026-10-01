@@ -140,14 +140,18 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
     /* Ranking */
     $sRank = \App\Http\Controllers\Staff\RankingController::class;
     Route::get('/staff-ranking', [$sRank, 'index'])->name('staff-ranking');
-    // Bobot kriteria bersifat tetap (read-only) sesuai revisi dosen,
+    // Bobot kriteria bersifat tetap (read-only, hasil AHP) sesuai revisi dosen,
     // sehingga route POST /staff-ranking/bobot untuk mengubah bobot dihapus.
     Route::post('/staff-ranking/generate', [$sRank, 'generate'])->name('staff-ranking.generate');
+    // REVISI DOSEN 01-10-2026: dasar/alasan pembobotan setiap kriteria (teks dokumentasi).
+    Route::put('/staff-ranking/dasar-pembobotan', [$sRank, 'simpanDasar'])->name('staff-ranking.dasar');
     Route::delete('/staff-ranking', [$sRank, 'reset'])->name('staff-ranking.reset');
 
     /* Pengumuman */
     $sPeng = \App\Http\Controllers\Staff\PengumumanController::class;
     Route::get('/staff-pengumuman', [$sPeng, 'index'])->name('staff-pengumuman');
+    // REVISI DOSEN 01-10-2026: cari penerima (email @mhs.politala.ac.id) untuk input chip banyak penerima.
+    Route::get('/staff-pengumuman/cari-mahasiswa', [$sPeng, 'cariMahasiswa'])->name('staff-pengumuman.cari-mahasiswa');
     Route::post('/staff-pengumuman', [$sPeng, 'store'])->name('staff-pengumuman.store');
     Route::put('/staff-pengumuman/{pengumuman}', [$sPeng, 'update'])->name('staff-pengumuman.update');
     Route::delete('/staff-pengumuman/{pengumuman}', [$sPeng, 'destroy'])->name('staff-pengumuman.destroy');

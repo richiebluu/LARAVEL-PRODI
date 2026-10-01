@@ -23,13 +23,26 @@ class MahasiswaController extends Controller
     /** Jumlah baris organisasi pada form (Excel acuan memuat 2 organisasi). */
     public const MAKS_ORGANISASI = 2;
 
+    /**
+     * REVISI DOSEN 01-10-2026: jumlah data per halaman dapat dipilih Staff Prodi.
+     * Default 10 data; pilihan 5 / 10 / 15 / 20 (query parameter ?per_page=).
+     */
+    public const PILIHAN_PER_HALAMAN = [5, 10, 15, 20];
+    public const PER_HALAMAN_BAWAAN = 10;
+
     public function __construct(private readonly RankingService $ranking) {}
 
-    /** Daftar mahasiswa: search + filter angkatan + pagination, semua dari database. */
+    /** Daftar mahasiswa: search + filter angkatan + jumlah per halaman + pagination Laravel. */
     public function index(Request $request)
     {
         $cari = trim((string) $request->query('q'));
         $angkatan = $request->query('angkatan');
+
+        // Nilai di luar pilihan (mis. ?per_page=1000) dikembalikan ke bawaan 10.
+        $perHalaman = (int) $request->query('per_page', self::PER_HALAMAN_BAWAAN);
+        if (! in_array($perHalaman, self::PILIHAN_PER_HALAMAN, true)) {
+            $perHalaman = self::PER_HALAMAN_BAWAAN;
+        }
 
         $mahasiswa = Mahasiswa::query()
             ->with(['user', 'organisasi', 'prestasiDisetujui'])
@@ -40,8 +53,8 @@ class MahasiswaController extends Controller
             ->cari($cari)
             ->when($angkatan, fn ($q) => $q->where('angkatan', $angkatan))
             ->orderBy('nama')
-            ->paginate(6)
-            ->withQueryString();
+            ->paginate($perHalaman)
+            ->withQueryString(); // q, angkatan, per_page ikut terbawa saat pindah halaman
 
         $daftarAngkatan = Mahasiswa::query()
             ->whereNotNull('angkatan')
@@ -54,6 +67,8 @@ class MahasiswaController extends Controller
             'daftarAngkatan' => $daftarAngkatan,
             'cari' => $cari,
             'angkatan' => $angkatan,
+            'perHalaman' => $perHalaman,
+            'pilihanPerHalaman' => self::PILIHAN_PER_HALAMAN,
             'jumlah' => $mahasiswa->total(),
             'daftarJabatan' => Organisasi::daftarJabatan(),
             'maksOrganisasi' => self::MAKS_ORGANISASI,
@@ -90,8 +105,7 @@ class MahasiswaController extends Controller
             $this->simpanOrganisasi($mahasiswa, $data['organisasi'] ?? []);
         });
 
-        return redirect()
-            ->route('staff-mahasiswa')
+        return $this->kembaliKeDaftar()
             ->with('success', 'Data mahasiswa berhasil ditambahkan.');
     }
 
@@ -127,8 +141,7 @@ class MahasiswaController extends Controller
             }
         });
 
-        return redirect()
-            ->route('staff-mahasiswa')
+        return $this->kembaliKeDaftar()
             ->with('success', 'Data mahasiswa berhasil diperbarui.');
     }
 
@@ -143,9 +156,22 @@ class MahasiswaController extends Controller
             $user?->delete();
         });
 
-        return redirect()
-            ->route('staff-mahasiswa')
+        return $this->kembaliKeDaftar()
             ->with('success', 'Data mahasiswa '.$nama.' berhasil dihapus.');
+    }
+
+    /**
+     * Kembali ke daftar mahasiswa dengan pencarian, filter, jumlah per halaman, dan
+     * halaman yang sama seperti sebelum menyimpan/menghapus (tidak reset ke 10 data).
+     */
+    private function kembaliKeDaftar()
+    {
+        $sebelumnya = url()->previous();
+        $daftar = route('staff-mahasiswa');
+
+        return str_starts_with($sebelumnya, $daftar)
+            ? redirect()->to($sebelumnya)
+            : redirect()->route('staff-mahasiswa');
     }
 
     /** Unduh template CSV mahasiswa. */

@@ -36,3 +36,5 @@ Lihat REVISI-DATABASE.md dan REVISI-2026-09-24.md untuk rincian lengkap.
 > `pengajuan_perubahan`, `pengumuman_penerima`, `notifikasi` dihapus (penerima & notifikasi kini kolom
 > `pengumuman.nim`, `pengumuman.notifikasi`, `pengumuman.dibaca_pada`). `mata_kuliah` (Kurikulum) dipertahankan
 > di luar ERD atas permintaan pemilik project. Lihat REVISI-ERD-2026-09-29.md.
+
+> Revisi dosen 01-10-2026: akreditasi utama (Terakreditasi + tanggal terbaru), per_page mahasiswa 5/10/15/20, dasar pembobotan + AHP di Staff\RankingController::hitungAHP(), pengumuman banyak penerima (tabel pengumuman_penerima), hero publik foto GTI (App\Support\HeroFoto). Lihat REVISI-2026-10-01.md.
