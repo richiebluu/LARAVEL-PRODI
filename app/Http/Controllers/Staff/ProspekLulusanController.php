@@ -10,17 +10,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-/**
- * DATA MASTER — Prospek Lulusan (REVISI 28-09-2026).
- * Dikelola Staff Prodi dengan pola CRUD yang sama seperti Lowongan Kerja.
- * Ikon kategori dipilih dari dropdown (ProspekLulusan::IKON) pada tambah & edit.
- */
 class ProspekLulusanController extends Controller
 {
     use MengimporCsv;
 
-    /** Kolom CSV impor prospek lulusan (urutan template). REVISI 28-09-2026 tahap 2. */
-    public const KOLOM_CSV = ['nama', 'kategori', 'ikon', 'deskripsi', 'status'];
+    public const KOLOM_CSV = ['nama', 'ikon', 'deskripsi', 'status'];
 
     public function index(Request $request)
     {
@@ -29,7 +23,7 @@ class ProspekLulusanController extends Controller
         $prospek = ProspekLulusan::query()
             ->when($cari !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->where('nama', 'like', '%'.$cari.'%')
-                ->orWhere('kategori', 'like', '%'.$cari.'%')))
+                ->orWhere('deskripsi', 'like', '%'.$cari.'%')))
             ->urut()
             ->paginate(10)
             ->withQueryString();
@@ -39,8 +33,7 @@ class ProspekLulusanController extends Controller
             'cari' => $cari,
             'jumlah' => $prospek->total(),
             'daftarIkon' => ProspekLulusan::IKON,
-            // Saran kategori dari data yang sudah ada (datalist).
-            'saranKategori' => ProspekLulusan::query()->distinct()->orderBy('kategori')->pluck('kategori'),
+            'deskripsiIkon' => ProspekLulusan::IKON_DESKRIPSI,
         ]);
     }
 
@@ -55,7 +48,7 @@ class ProspekLulusanController extends Controller
 
     public function update(Request $request, ProspekLulusan $prospek)
     {
-        $prospek->update($this->validasi($request));
+        $prospek->update($this->validasi($request, $prospek));
 
         return redirect()->route('staff-prospek-lulusan')->with('success', 'Prospek lulusan berhasil diperbarui.');
     }
@@ -68,30 +61,23 @@ class ProspekLulusanController extends Controller
         return redirect()->route('staff-prospek-lulusan')->with('success', 'Prospek lulusan "'.$nama.'" berhasil dihapus.');
     }
 
-    /** Unduh template CSV prospek lulusan. */
     public function template()
     {
         return ImporCsv::template('template-prospek-lulusan.csv', self::KOLOM_CSV);
     }
 
-    /**
-     * Impor CSV prospek lulusan (REVISI 28-09-2026 tahap 2).
-     * Kolom ikon boleh diisi kode ikon (mis. fa-code) atau label dropdown (mis. "Pemrograman / Software");
-     * kosong = ikon umum. Nama yang sama dianggap data yang sama.
-     */
     public function impor(Request $request)
     {
         return $this->prosesImporCsv($request, [
             'kolom' => self::KOLOM_CSV,
-            'wajib' => ['nama', 'kategori'],
-            'alias' => ['nama_prospek' => 'nama', 'prospek_lulusan' => 'nama', 'ikon_kategori' => 'ikon'],
+            'wajib' => ['nama'],
+            'alias' => ['nama_prospek' => 'nama', 'prospek_lulusan' => 'nama', 'nama_prospek_lulusan' => 'nama', 'ikon_kategori' => 'ikon'],
             'label' => 'prospek lulusan',
             'route' => 'staff-prospek-lulusan',
             'siapkan' => function (array $d) {
-                $d['ikon'] = ImporCsv::cocokkan($d['ikon'], ProspekLulusan::IKON) ?? 'fa-briefcase';
-                if (is_string($d['ikon']) && ! str_starts_with($d['ikon'], 'fa-') && array_key_exists('fa-'.strtolower($d['ikon']), ProspekLulusan::IKON)) {
-                    $d['ikon'] = 'fa-'.strtolower($d['ikon']);
-                }
+                $d['ikon'] = blank($d['ikon'])
+                    ? ProspekLulusan::IKON_BAWAAN
+                    : (ProspekLulusan::normalisasiIkon($d['ikon']) ?? $d['ikon']);
                 $d['status'] = ImporCsv::cocokkan($d['status'], ['aktif' => 'Aktif', 'nonaktif' => 'Nonaktif']) ?? ProspekLulusan::STATUS_AKTIF;
 
                 return $d;
@@ -107,17 +93,25 @@ class ProspekLulusanController extends Controller
         ]);
     }
 
-    private function validasi(Request $request): array
+    private function validasi(Request $request, ?ProspekLulusan $lama = null): array
     {
-        return $request->validate($this->aturan(), $this->pesan(), $this->atribut());
+        if ($request->filled('ikon')) {
+            $request->merge(['ikon' => ProspekLulusan::normalisasiIkon($request->input('ikon')) ?? $request->input('ikon')]);
+        }
+
+        return $request->validate($this->aturan($lama), $this->pesan(), $this->atribut());
     }
 
-    private function aturan(): array
+    private function aturan(?ProspekLulusan $lama = null): array
     {
+        $pilihan = array_keys(ProspekLulusan::IKON);
+        if ($lama && filled($lama->ikon)) {
+            $pilihan[] = $lama->ikon;
+        }
+
         return [
             'nama' => ['required', 'string', 'max:150'],
-            'kategori' => ['required', 'string', 'max:100'],
-            'ikon' => ['required', Rule::in(array_keys(ProspekLulusan::IKON))],
+            'ikon' => ['required', 'string', 'max:50', Rule::in($pilihan)],
             'deskripsi' => ['nullable', 'string', 'max:1000'],
             'status' => ['required', Rule::in([ProspekLulusan::STATUS_AKTIF, ProspekLulusan::STATUS_NONAKTIF])],
         ];
@@ -126,7 +120,7 @@ class ProspekLulusanController extends Controller
     private function pesan(): array
     {
         return [
-            'ikon.in' => 'Pilih ikon kategori dari daftar yang tersedia.',
+            'ikon.in' => 'Pilih salah satu ikon yang tersedia.',
             'status.in' => 'Status harus Aktif atau Nonaktif.',
         ];
     }
@@ -134,10 +128,9 @@ class ProspekLulusanController extends Controller
     private function atribut(): array
     {
         return [
-            'nama' => 'Nama prospek',
-            'kategori' => 'Kategori',
-            'ikon' => 'Ikon kategori',
-            'deskripsi' => 'Deskripsi',
+            'nama' => 'Nama Prospek Lulusan',
+            'ikon' => 'Ikon',
+            'deskripsi' => 'Deskripsi Singkat',
         ];
     }
 }

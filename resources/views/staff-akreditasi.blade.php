@@ -12,9 +12,11 @@
 <body data-page="staff-akreditasi">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -40,17 +42,15 @@
         </div>
       @endif
 
-      {{-- REVISI DOSEN 01-10-2026: badge/halaman publik memakai akreditasi UTAMA
-           (status Terakreditasi + tanggal penetapan terbaru), bukan baris pertama/ID terakhir. --}}
       @php $terbaru = $akreditasiUtama; @endphp
 
       <div class="panel">
         <div class="panel-head"><h2>Riwayat Akreditasi <span style="color:var(--grey-500); font-weight:500; font-size:.85rem;">({{ $daftarAkreditasi->count() }} data)</span></h2>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <a href="{{ url('/akreditasi') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-globe"></i> Lihat Halaman Publik</a>
-            <a href="#tambahAkreditasi" class="btn btn-primary btn-sm" data-fokus="#formAkreditasi [name=peringkat]"><i class="fa-solid fa-plus"></i> Tambah Akreditasi</a>
           </div></div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Peringkat</th><th>Lembaga</th><th>Nomor SK</th><th>Mulai</th><th>Berakhir</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody>
@@ -79,7 +79,7 @@
                         'tanggal_berakhir' => optional($a->tanggal_berakhir)->format('Y-m-d'),
                       ]) }}"><i class="fa-solid fa-pen"></i></button>
                     <form method="POST" action="{{ route('staff-akreditasi.destroy', $a) }}" style="display:inline;"
-                          data-konfirmasi="Hapus data akreditasi ini?">
+                          data-konfirmasi="Hapus data akreditasi {{ $a->peringkat }} (SK {{ $a->nomor_sk ?? '-' }})?" data-konfirmasi-judul="Hapus Akreditasi?">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fa-solid fa-trash"></i></button>
@@ -93,7 +93,6 @@
           </table>
         </div>
       </div>
-
 
       <div class="two-col">
         <div class="panel" id="tambahAkreditasi">
@@ -135,6 +134,7 @@
         </div>
       </div>
 
+      {{-- Modal Edit Data Akreditasi --}}
       <div class="modal-overlay" id="modalEditAkreditasi">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditAkreditasi" enctype="multipart/form-data">
@@ -164,7 +164,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

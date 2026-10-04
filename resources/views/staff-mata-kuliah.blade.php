@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kurikulum | Dashboard Staff Prodi</title>
+<title>Mata Kuliah | Dashboard Staff Prodi</title>
 <link rel="icon" href="{{ asset('images/logo-ti.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('admin/css/admin.css') }}">
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body data-page="staff-kurikulum">
+<body data-page="staff-mata-kuliah">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
-            <h1>Kurikulum</h1>
+            <h1>Mata Kuliah</h1>
             <div class="subtitle">Daftar mata kuliah Program Studi, disesuaikan dengan data SIPADU.</div>
           </div>
         </div>
@@ -50,7 +52,7 @@
             <h2 style="margin:0;">Data Mata Kuliah <span style="color:var(--grey-500); font-weight:500; font-size:.85rem;">(<span id="crudCount">{{ $jumlah }}</span> data &middot; total {{ $totalSks }} SKS)</span></h2>
           </div>
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-            <form method="GET" action="{{ route('staff-kurikulum') }}" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <form method="GET" action="{{ route('staff-mata-kuliah') }}" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
               <select name="semester" data-auto-submit style="padding:10px 14px; border-radius:10px; border:1.5px solid var(--grey-300); font-size:.85rem;">
                 <option value="">Semua semester</option>
                 @for ($i = 1; $i <= $semesterMaks; $i++)
@@ -59,19 +61,21 @@
               </select>
               <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="crudSearch" name="q" value="{{ $cari }}" placeholder="Cari kode / nama MK..."></div>
             </form>
-            <a href="{{ route('kurikulum') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-globe"></i> Lihat Halaman Publik</a>
-            <button class="btn btn-outline" data-modal-open="modalImporKurikulum"><i class="fa-solid fa-file-import"></i> Impor CSV</button>
+            <a href="{{ route('mata-kuliah') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-globe"></i> Lihat Halaman Publik</a>
+            <button class="btn btn-outline" data-modal-open="modalImporMataKuliah"><i class="fa-solid fa-file-import"></i> Impor CSV</button>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahMk"><i class="fa-solid fa-plus"></i> Tambah Mata Kuliah</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Semester</th><th>Kode MK</th><th>Nama Mata Kuliah</th><th>SKS</th><th>Jenis</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
               @forelse ($daftarMataKuliah as $mk)
                 <tr>
                   <td>{{ $mk->semester }}</td>
-                  <td><strong>{{ $mk->kode }}</strong></td>
+                  <td><strong>{{ $mk->kode_mata_kuliah }}</strong></td>
                   <td>{{ $mk->nama }}</td>
                   <td>{{ $mk->sks }}</td>
                   <td><span class="badge {{ $mk->jenis === 'Wajib' ? 'badge-blue' : 'badge-grey' }}">{{ $mk->jenis }}</span></td>
@@ -79,10 +83,10 @@
                     <button class="btn btn-outline btn-sm btn-icon" title="Edit"
                       data-modal-open="modalEditMk"
                       data-isi-form="formEditMk"
-                      data-action="{{ route('staff-kurikulum.update', $mk) }}"
+                      data-action="{{ route('staff-mata-kuliah.update', $mk) }}"
                       data-judul-modal="Edit Mata Kuliah"
-                      data-nilai="{{ json_encode(['kode' => $mk->kode, 'nama' => $mk->nama, 'semester' => $mk->semester, 'sks' => $mk->sks, 'jenis' => $mk->jenis]) }}"><i class="fa-solid fa-pen"></i></button>
-                    <form method="POST" action="{{ route('staff-kurikulum.destroy', $mk) }}" style="display:inline;" data-konfirmasi="Hapus mata kuliah {{ $mk->kode }} - {{ $mk->nama }}?">
+                      data-nilai="{{ json_encode(['kode' => $mk->kode_mata_kuliah, 'nama' => $mk->nama, 'semester' => $mk->semester, 'sks' => $mk->sks, 'jenis' => $mk->jenis]) }}"><i class="fa-solid fa-pen"></i></button>
+                    <form method="POST" action="{{ route('staff-mata-kuliah.destroy', $mk) }}" style="display:inline;" data-konfirmasi="Hapus mata kuliah {{ $mk->kode_mata_kuliah }} - {{ $mk->nama }}?">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Hapus"><i class="fa-solid fa-trash"></i></button>
@@ -90,7 +94,7 @@
                   </td>
                 </tr>
               @empty
-                <tr class="empty-row"><td colspan="6"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>{{ $cari || $semester ? 'Tidak ada mata kuliah yang cocok dengan filter.' : 'Belum ada data kurikulum. Tambahkan satu per satu atau impor CSV dari data SIPADU.' }}</td></tr>
+                <tr class="empty-row"><td colspan="6"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>{{ $cari || $semester ? 'Tidak ada mata kuliah yang cocok dengan filter.' : 'Belum ada data mata kuliah. Tambahkan satu per satu atau impor CSV dari data SIPADU.' }}</td></tr>
               @endforelse
             </tbody>
           </table>
@@ -107,9 +111,10 @@
       </div>
 
 @foreach (['tambah' => null, 'edit' => 1] as $mode => $edit)
+      {{-- Modal Edit --}}
       <div class="modal-overlay" id="{{ $edit ? 'modalEditMk' : 'modalTambahMk' }}" @if (! $edit && $errors->any() && old('kode') !== null && ! old('_method') && ! session('impor_gagal')) data-buka-otomatis @endif>
         <div class="modal-box">
-          <form method="POST" action="{{ $edit ? '#' : route('staff-kurikulum.store') }}" @if ($edit) id="formEditMk" @endif>
+          <form method="POST" action="{{ $edit ? '#' : route('staff-mata-kuliah.store') }}" @if ($edit) id="formEditMk" @endif>
             @csrf
             @if ($edit) @method('PUT') @endif
             <div class="modal-head"><h3 data-modal-title>{{ $edit ? 'Edit Mata Kuliah' : 'Tambah Mata Kuliah' }}</h3>
@@ -142,11 +147,12 @@
       </div>
 @endforeach
 
+      {{-- Modal Impor CSV --}}
       @include('partials.impor-csv-modal', [
-        'id' => 'modalImporKurikulum',
-        'judul' => 'Impor Kurikulum (CSV)',
-        'action' => route('staff-kurikulum.impor'),
-        'template' => route('staff-kurikulum.template'),
+        'id' => 'modalImporMataKuliah',
+        'judul' => 'Impor Mata Kuliah (CSV)',
+        'action' => route('staff-mata-kuliah.impor'),
+        'template' => route('staff-mata-kuliah.template'),
         'kolom' => [
           'kode' => 'Kode mata kuliah sesuai SIPADU, mis. TI101',
           'nama' => 'Nama mata kuliah',
@@ -165,7 +171,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

@@ -9,7 +9,6 @@ class RankingController extends Controller
 {
     public function __construct(private readonly RankingService $ranking) {}
 
-    /** Halaman ranking publik (metode SAW). Sumber data: tabel ranking + ranking_bobot. */
     public function index(Request $request)
     {
         $semua = $this->ranking->untukPublik();

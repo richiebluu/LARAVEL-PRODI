@@ -7,17 +7,8 @@ use Illuminate\Http\Request;
 
 class DosenController extends Controller
 {
-    /**
-     * Halaman dosen publik.
-     * REVISI 24-09-2026: tampilan berupa TABEL + tombol "Lihat Detail" (modal detail
-     * dosen yang sudah ada). Bagian publikasi diganti link "Publikasi Google Scholar".
-     */
     public function index(Request $request)
     {
-        // REVISI 28-09-2026: semua dosen ditampilkan beserta Status
-        // (Aktif / Pendidikan / Nonaktif), diurutkan Aktif lebih dulu.
-        // REVISI 28-09-2026 tahap 2: fitur search di atas tabel dosen (server-side lewat ?q=,
-        // ditambah penyaringan realtime di browser) + ringkasan jumlah per status.
         $cari = trim((string) $request->query('q'));
 
         $dosen = Dosen::query()

@@ -1,18 +1,9 @@
-/* ==========================================================================
-   DASHBOARD UI SCRIPT — DOSEN / MAHASISWA / STAFF PRODI
-
-   PENTING: file ini TIDAK lagi menyimpan atau membaca data aplikasi.
-   Tidak ada localStorage, tidak ada TIDB, tidak ada array dummy.
-   Seluruh data berasal dari database Laravel dan sudah dirender oleh Blade.
-
-   Isi file ini murni interaksi tampilan:
-   toast, modal, sidebar, tab, konfirmasi hapus, dan pencarian (submit form).
-   ========================================================================== */
+/* Dashboard UI Script */
 
 function $d(sel, root) { return (root || document).querySelector(sel); }
 function $$d(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
-/* ---------- TOAST ---------- */
+/* Toast */
 function tiToast(pesan, tipe) {
   var wrap = $d('.toast-wrap');
   if (!wrap) {
@@ -29,9 +20,7 @@ function tiToast(pesan, tipe) {
   setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3400);
 }
 
-/* ---------- MODAL ----------
-   Modal sekarang berupa markup Blade yang sudah ada di halaman.
-   Script hanya membuka/menutup, tidak membuat isi modal dari data JS. */
+/* Modal */
 function tiBukaModal(id) {
   var m = document.getElementById(id);
   if (m) m.classList.add('show');
@@ -64,8 +53,6 @@ function tiInitModal() {
   });
 }
 
-/* ---------- ISI FORM EDIT DARI ATRIBUT data-* BARIS TABEL ----------
-   Nilainya berasal dari Blade (hasil query database), bukan dari JS. */
 function tiInitFormIsi() {
   $$d('[data-isi-form]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -84,7 +71,6 @@ function tiInitFormIsi() {
         input.value = nilai[nama] === null ? '' : nilai[nama];
       });
 
-      // Pratinjau foto yang sudah tersimpan (REVISI 27-09-2026).
       var pratinjau = form.querySelector('[data-foto-preview]');
       if (pratinjau) {
         var foto = btn.getAttribute('data-foto');
@@ -95,10 +81,8 @@ function tiInitFormIsi() {
       var hapusFoto = form.querySelector('[name="hapus_foto"]');
       if (hapusFoto) hapusFoto.checked = false;
 
-      // Komponen khusus (mis. chip penerima pengumuman) mengisi dirinya dari data yang sama.
       form.dispatchEvent(new CustomEvent('ti:isi-form', { detail: nilai }));
 
-      // Perbarui field bersyarat (data-tampil-jika) setelah form diisi.
       $$d('select', form).forEach(function (sel) { sel.dispatchEvent(new Event('change')); });
 
       var judul = btn.getAttribute('data-judul-modal');
@@ -111,24 +95,98 @@ function tiInitFormIsi() {
   });
 }
 
-/* ---------- KONFIRMASI HAPUS ----------
-   Form hapus tetap form HTML biasa (method DELETE) menuju Laravel. */
+/* Dialog Konfirmasi */
+var TI_KONF_IKON = { bahaya: 'fa-trash-can', sukses: 'fa-circle-check', info: 'fa-circle-question' };
+
+function tiKonfirmasi(opsi) {
+  opsi = opsi || {};
+  var tipe = TI_KONF_IKON[opsi.tipe] ? opsi.tipe : 'info';
+  var esc = function (t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; };
+
+  return new Promise(function (selesai) {
+    var asal = document.activeElement;
+    var overlay = document.createElement('div');
+    overlay.className = 'ti-konf ti-konf--' + tipe;
+    overlay.innerHTML =
+      '<div class="ti-konf-box" role="alertdialog" aria-modal="true" aria-labelledby="tiKonfJudul" aria-describedby="tiKonfPesan">' +
+        '<div class="ti-konf-ikon"><i class="fa-solid ' + (opsi.ikon || TI_KONF_IKON[tipe]) + '"></i></div>' +
+        '<h3 id="tiKonfJudul">' + esc(opsi.judul || 'Konfirmasi') + '</h3>' +
+        '<p id="tiKonfPesan">' + esc(opsi.pesan || 'Yakin ingin melanjutkan?') + '</p>' +
+        (opsi.catatan ? '<div class="ti-konf-catatan"><i class="fa-solid fa-circle-info"></i><span>' + esc(opsi.catatan) + '</span></div>' : '') +
+        '<div class="ti-konf-aksi">' +
+          '<button type="button" class="btn btn-outline" data-konf-batal>Batal</button>' +
+          '<button type="button" class="btn ti-konf-ya" data-konf-ya>' + esc(opsi.tombol || 'Ya, Lanjutkan') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.body.classList.add('ti-konf-terbuka');
+
+    var btnBatal = overlay.querySelector('[data-konf-batal]');
+    var btnYa = overlay.querySelector('[data-konf-ya]');
+
+    var tutup = function (hasil) {
+      document.removeEventListener('keydown', tombolKey, true);
+      if (hasil) {
+        btnYa.disabled = true;
+        btnBatal.disabled = true;
+        btnYa.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + esc(opsi.proses || 'Memproses...');
+      } else {
+        overlay.classList.remove('show');
+        document.body.classList.remove('ti-konf-terbuka');
+        setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 220);
+        if (asal && asal.focus) asal.focus();
+      }
+      selesai(hasil);
+    };
+
+    var tombolKey = function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); tutup(false); }
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+        (document.activeElement === btnBatal ? btnYa : btnBatal).focus();
+      }
+    };
+
+    btnBatal.addEventListener('click', function () { tutup(false); });
+    btnYa.addEventListener('click', function () { tutup(true); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) tutup(false); });
+    document.addEventListener('keydown', tombolKey, true);
+
+    requestAnimationFrame(function () {
+      overlay.classList.add('show');
+      (tipe === 'bahaya' ? btnBatal : btnYa).focus();
+    });
+  });
+}
+window.tiKonfirmasi = tiKonfirmasi;
+
 function tiInitKonfirmasi() {
   $$d('[data-konfirmasi]').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       if (form.dataset.sudahKonfirmasi === '1') return;
       e.preventDefault();
 
-      var pesan = form.getAttribute('data-konfirmasi') || 'Yakin ingin melanjutkan?';
-      if (window.confirm(pesan)) {
+      var metode = form.querySelector('input[name="_method"]');
+      var hapus = metode && String(metode.value).toUpperCase() === 'DELETE';
+      var tipe = form.getAttribute('data-konfirmasi-tipe') || (hapus ? 'bahaya' : 'info');
+
+      tiKonfirmasi({
+        tipe: tipe,
+        judul: form.getAttribute('data-konfirmasi-judul') || (hapus ? 'Hapus Data?' : 'Konfirmasi Tindakan'),
+        pesan: form.getAttribute('data-konfirmasi') || 'Yakin ingin melanjutkan?',
+        catatan: form.getAttribute('data-konfirmasi-catatan') || (hapus ? 'Data yang dihapus tidak dapat dikembalikan.' : ''),
+        tombol: form.getAttribute('data-konfirmasi-tombol') || (hapus ? 'Ya, Hapus' : 'Ya, Lanjutkan'),
+        proses: hapus ? 'Menghapus...' : 'Memproses...'
+      }).then(function (ya) {
+        if (!ya) return;
         form.dataset.sudahKonfirmasi = '1';
         form.submit();
-      }
+      });
     });
   });
 }
 
-/* ---------- KERANGKA DASHBOARD ---------- */
+/* Kerangka Dashboard */
 function tiInitShell() {
   var page = document.body.getAttribute('data-page');
   $$d('.side-link').forEach(function (a) {
@@ -139,21 +197,44 @@ function tiInitShell() {
   var toggle = $d('.sidebar-toggle');
   var sidebar = $d('.sidebar');
   if (toggle && sidebar) {
-    toggle.addEventListener('click', function () { sidebar.classList.toggle('open'); });
+    toggle.addEventListener('click', function () {
+      if (document.body.classList.contains('sidebar-bisa-susut') && window.innerWidth > 900) {
+        var mini = document.body.classList.toggle('sidebar-mini');
+        toggle.setAttribute('aria-expanded', mini ? 'false' : 'true');
+        try { window.localStorage.setItem(document.body.getAttribute('data-sidebar-kunci') || 'tiSidebar', mini ? 'mini' : 'normal'); } catch (e) {  }
+        return;
+      }
+      sidebar.classList.toggle('open');
+    });
+    if (document.body.classList.contains('sidebar-bisa-susut')) {
+      toggle.setAttribute('title', 'Susutkan / buka sidebar');
+      toggle.setAttribute('aria-controls', document.body.getAttribute('data-sidebar-id') || '');
+      toggle.setAttribute('aria-expanded', document.body.classList.contains('sidebar-mini') ? 'false' : 'true');
+    }
   }
 
   $$d('[data-logout]').forEach(function (b) {
     b.addEventListener('click', function (e) {
       e.preventDefault();
-      if (window.confirm('Keluar dari dashboard?')) {
+      var nama = $d('.admin-profile .name');
+      tiKonfirmasi({
+        tipe: 'info',
+        ikon: 'fa-right-from-bracket',
+        judul: 'Keluar dari Dashboard?',
+        pesan: 'Sesi Anda akan diakhiri. Anda perlu login kembali untuk mengakses dashboard.',
+        catatan: nama ? 'Masuk sebagai ' + nama.textContent.trim() : '',
+        tombol: 'Ya, Keluar',
+        proses: 'Keluar...'
+      }).then(function (ya) {
+        if (!ya) return;
         var form = document.getElementById('formLogout');
         if (form) form.submit();
-      }
+      });
     });
   });
 }
 
-/* ---------- TAB ---------- */
+/* Tab */
 function tiInitTabs() {
   $$d('.tab-bar[data-tabs]').forEach(function (bar) {
     $$d('.tab-btn', bar).forEach(function (btn) {
@@ -171,7 +252,6 @@ function tiInitTabs() {
   });
 }
 
-/* ---------- FILTER & SEARCH -> submit form ke Laravel ---------- */
 function tiInitFilter() {
   $$d('[data-auto-submit]').forEach(function (el) {
     el.addEventListener('change', function () {
@@ -180,9 +260,7 @@ function tiInitFilter() {
   });
 }
 
-/* ---------- FIELD BERSYARAT (REVISI 28-09-2026) ----------
-   <div data-tampil-jika="status=pendidikan"> hanya tampil bila select[name=status]
-   pada form yang sama bernilai "pendidikan". */
+/* Field Bersyarat */
 function tiInitTampilJika() {
   $$d('[data-tampil-jika]').forEach(function (el) {
     var aturan = el.getAttribute('data-tampil-jika').split('=');
@@ -195,21 +273,56 @@ function tiInitTampilJika() {
   });
 }
 
-/* ---------- PRATINJAU IKON DARI DROPDOWN (REVISI 28-09-2026) ----------
-   <select data-pratinjau-ikon> mengganti ikon pada [data-ikon-preview] di form yang sama. */
+/* Pratinjau Ikon */
+function tiKelasIkon(nilai) {
+  var gaya = 'fa-solid', nama = '';
+  var alias = { fas: 'fa-solid', far: 'fa-regular', fab: 'fa-brands' };
+  String(nilai || '').trim().toLowerCase().split(/\s+/).forEach(function (t) {
+    if (!t) return;
+    t = alias[t] || t;
+    if (t === 'fa-solid' || t === 'fa-regular' || t === 'fa-brands') { gaya = t; }
+    else if (!nama) { nama = t.indexOf('fa-') === 0 ? t : 'fa-' + t; }
+  });
+  if (!/^fa-[a-z0-9]+(-[a-z0-9]+)*$/.test(nama)) nama = 'fa-briefcase';
+  return gaya + ' ' + nama;
+}
+
 function tiInitPratinjauIkon() {
-  $$d('select[data-pratinjau-ikon]').forEach(function (sel) {
-    var form = sel.closest('form');
+  $$d('[data-pratinjau-ikon]').forEach(function (el) {
+    var form = el.closest('form');
     var kotak = form ? form.querySelector('[data-ikon-preview] i') : null;
     if (!kotak) return;
-    var perbarui = function () { kotak.className = 'fa-solid ' + (sel.value || 'fa-briefcase'); };
-    sel.addEventListener('change', perbarui);
+    var nama = form.querySelector('[data-ikon-nama]');
+    var info = form.querySelector('[data-ikon-deskripsi]');
+    var tombol = $$d('[data-ikon-saran] [data-ikon]', form);
+
+    var perbarui = function () {
+      kotak.className = tiKelasIkon(el.value);
+      var cocok = null;
+      tombol.forEach(function (b) {
+        var pilih = b.getAttribute('data-ikon') === el.value;
+        b.classList.toggle('ikon-dipilih', pilih);
+        b.setAttribute('aria-pressed', pilih ? 'true' : 'false');
+        if (pilih) cocok = b;
+      });
+      if (nama) nama.textContent = cocok ? cocok.getAttribute('data-ikon-label') : 'Ikon lainnya';
+      if (info) info.textContent = cocok ? cocok.getAttribute('data-ikon-info') : 'Ikon yang tersimpan sebelumnya. Klik salah satu ikon di bawah untuk menggantinya.';
+    };
+    el.addEventListener('change', perbarui);
+    el.addEventListener('input', perbarui);
     perbarui();
+
+    tombol.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        el.value = btn.getAttribute('data-ikon');
+        perbarui();
+      });
+    });
+    form.addEventListener('ti:isi-form', function () { setTimeout(perbarui, 0); });
   });
 }
 
-/* ---------- PRATINJAU FOTO SEBELUM DIUNGGAH (REVISI 27-09-2026) ----------
-   Hanya tampilan; berkas tetap divalidasi Laravel (jpg/png/webp, maks 2 MB). */
+/* Pratinjau Foto Sebelum Diunggah */
 function tiInitPratinjauFoto() {
   $$d('input[type="file"][data-preview-foto]').forEach(function (input) {
     input.addEventListener('change', function () {
@@ -227,7 +340,7 @@ function tiInitPratinjauFoto() {
   });
 }
 
-/* ---------- UPLOAD (dropzone) ---------- */
+/* Upload */
 function tiInitDropzone() {
   $$d('.dropzone[data-file-input]').forEach(function (drop) {
     var input = document.getElementById(drop.getAttribute('data-file-input'));
@@ -241,7 +354,7 @@ function tiInitDropzone() {
   });
 }
 
-/* ---------- SERET & LEPAS FILE KE DROPZONE (REVISI 28-09-2026 tahap 2) ---------- */
+/* Seret & Lepas File Ke Dropzone */
 function tiInitDropzoneSeret() {
   $$d('.dropzone[data-file-input]').forEach(function (drop) {
     var input = document.getElementById(drop.getAttribute('data-file-input'));
@@ -257,14 +370,12 @@ function tiInitDropzoneSeret() {
       try {
         input.files = e.dataTransfer.files;
         input.dispatchEvent(new Event('change'));
-      } catch (err) { /* browser lama: pilih file lewat klik */ }
+      } catch (err) {  }
     });
   });
 }
 
-/* ---------- IMPOR CSV: PRATINJAU SEBELUM DIUNGGAH (REVISI 28-09-2026 tahap 2) ----------
-   File dibaca di browser hanya untuk pratinjau & pemeriksaan awal (judul kolom, sel wajib
-   yang kosong, data ganda). Validasi final tetap di Laravel (App\Http\Controllers\Concerns\MengimporCsv). */
+/* Impor CSV */
 function tiNormalJudul(j) {
   return String(j || '').trim().replace(/^["']|["']$/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
@@ -379,7 +490,7 @@ function tiInitImporCsv() {
           tampil('<i class="fa-solid fa-triangle-exclamation"></i> ' + info + ' Ditemukan <strong>' + masalah.length + '</strong> baris yang perlu diperbaiki:<ul>' +
             masalah.slice(0, 5).map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') +
             (masalah.length > 5 ? '<li>... dan ' + (masalah.length - 5) + ' lainnya</li>' : '') + '</ul>', 'warn');
-          siap = true; // tetap boleh dikirim: server menampilkan detail lengkap dan membatalkan impor bila salah
+          siap = true;
         } else {
           tampil('<i class="fa-solid fa-circle-check"></i> ' + info + ' Format kolom sesuai. Data akan divalidasi ulang saat diimpor.', 'ok');
           siap = true;
@@ -404,8 +515,7 @@ function tiInitImporCsv() {
   });
 }
 
-/* ---------- LOADING SAAT MENYIMPAN FORM (REVISI 28-09-2026 tahap 2) ----------
-   Mencegah klik ganda pada tombol Simpan di modal tambah/edit. */
+/* Loading Saat Menyimpan Form */
 function tiInitLoadingSimpan() {
   $$d('.modal-overlay form[method="POST"]:not([data-impor-csv])').forEach(function (form) {
     form.addEventListener('submit', function () {
@@ -419,8 +529,6 @@ function tiInitLoadingSimpan() {
   });
 }
 
-/* ---------- TOMBOL MENUJU FORM DI HALAMAN YANG SAMA (REVISI 28-09-2026 tahap 2) ----------
-   <a href="#idPanel" data-fokus="selector input"> : gulir halus ke form lalu fokus ke input pertama. */
 function tiInitFokus() {
   $$d('a[data-fokus]').forEach(function (a) {
     a.addEventListener('click', function (e) {
@@ -434,11 +542,7 @@ function tiInitFokus() {
   });
 }
 
-/* ---------- PILIH BANYAK PENERIMA PENGUMUMAN (REVISI DOSEN 01-10-2026) ----------
-   Konsep "bagikan" Google Drive: ketik email @mhs.politala.ac.id -> sistem mencari
-   mahasiswa di DATABASE (GET /staff-pengumuman/cari-mahasiswa) -> pilih -> tampil
-   sebagai chip [ Nama × ]. Setiap chip membawa <input hidden name="penerima[]">.
-   Validasi final (domain email, mahasiswa berprestasi, tidak dobel) tetap di Laravel. */
+/* Pilih Banyak Penerima Pengumuman */
 function tiInitPilihPenerima() {
   $$d('[data-pilih-penerima]').forEach(function (wadah) {
     var form = wadah.closest('form');
@@ -459,7 +563,6 @@ function tiInitPilihPenerima() {
       return $$d('input[name="penerima[]"]', kotak).map(function (i) { return i.value; });
     };
 
-    // Opsi "Terkait Prestasi" hanya untuk prestasi milik penerima yang dipilih.
     var saringPrestasi = function () {
       if (!selectPrestasi) return;
       var nim = dipilih();
@@ -482,7 +585,7 @@ function tiInitPilihPenerima() {
     var tutupSaran = function () { saran.hidden = true; saran.innerHTML = ''; hasil = []; aktif = -1; };
 
     var tambahChip = function (m) {
-      if (!m || !m.nim || dipilih().indexOf(m.nim) !== -1) return; // tidak boleh dobel
+      if (!m || !m.nim || dipilih().indexOf(m.nim) !== -1) return;
       var chip = document.createElement('span');
       chip.className = 'penerima-chip';
       chip.setAttribute('data-nim', m.nim);
@@ -557,7 +660,7 @@ function tiInitPilihPenerima() {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       }).then(function (json) {
-        if (nomor !== urutan) return; // abaikan respons lama
+        if (nomor !== urutan) return;
         tampilHasil(json.data, json.pesan);
       }).catch(function () {
         if (nomor !== urutan) return;
@@ -574,7 +677,7 @@ function tiInitPilihPenerima() {
       if (e.key === 'ArrowDown' && hasil.length) { e.preventDefault(); aktif = (aktif + 1) % hasil.length; tandaiAktif(); }
       else if (e.key === 'ArrowUp' && hasil.length) { e.preventDefault(); aktif = (aktif - 1 + hasil.length) % hasil.length; tandaiAktif(); }
       else if (e.key === 'Enter') {
-        e.preventDefault(); // Enter memilih mahasiswa, bukan mengirim form
+        e.preventDefault();
         if (hasil.length) pilih(aktif >= 0 ? aktif : 0);
       }
       else if (e.key === 'Escape') { tutupSaran(); }
@@ -584,7 +687,7 @@ function tiInitPilihPenerima() {
       }
     });
 
-    saran.addEventListener('mousedown', function (e) { e.preventDefault(); }); // input tidak kehilangan fokus
+    saran.addEventListener('mousedown', function (e) { e.preventDefault(); });
     saran.addEventListener('click', function (e) {
       var opsi = e.target.closest('.penerima-opsi');
       if (opsi) pilih(parseInt(opsi.getAttribute('data-i'), 10));
@@ -604,7 +707,6 @@ function tiInitPilihPenerima() {
     input.addEventListener('blur', function () { setTimeout(tutupSaran, 150); });
 
     if (form) {
-      // Tombol Edit pada tabel: isi chip dari data penerima pengumuman tsb.
       form.addEventListener('ti:isi-form', function (e) {
         kosongkan();
         ((e.detail && e.detail.penerima) || []).forEach(tambahChip);
@@ -619,14 +721,56 @@ function tiInitPilihPenerima() {
           tiToast('Pilih minimal satu mahasiswa penerima.', 'bad');
           input.focus();
         }
-      }, true); // capture: berjalan sebelum efek loading tombol Simpan
+      }, true);
     }
 
     perbarui();
   });
 }
 
-/* ---------- FLASH MESSAGE DARI LARAVEL ---------- */
+/* Baris Form Dinamis */
+function tiInitBarisDinamis() {
+  $$d('[data-baris-dinamis]').forEach(function (wadah) {
+    var form = wadah.closest('form');
+    var tpl = wadah.querySelector('template[data-baris-template]');
+    var tombol = form ? form.querySelector('[data-tambah-baris]') : null;
+    if (!tpl) return;
+    var nomor = $$d('[data-baris]', wadah).length;
+
+    var aturHapus = function () {
+      var baris = $$d('[data-baris]', wadah);
+      baris.forEach(function (b) {
+        var h = b.querySelector('[data-hapus-baris]');
+        if (h) h.disabled = baris.length <= 1;
+      });
+    };
+
+    if (tombol) {
+      tombol.addEventListener('click', function () {
+        var html = tpl.innerHTML.replace(/__i__/g, String(nomor++));
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html.trim();
+        var baru = tmp.firstElementChild;
+        wadah.insertBefore(baru, tpl);
+        aturHapus();
+        var input = baru.querySelector('input, select');
+        if (input) input.focus();
+      });
+    }
+
+    wadah.addEventListener('click', function (e) {
+      var h = e.target.closest && e.target.closest('[data-hapus-baris]');
+      if (!h) return;
+      var b = h.closest('[data-baris]');
+      if (b && $$d('[data-baris]', wadah).length > 1) b.parentNode.removeChild(b);
+      aturHapus();
+    });
+
+    aturHapus();
+  });
+}
+
+/* Flash Message Dari Laravel */
 function tiInitFlash() {
   var box = $d('[data-flash]');
   if (!box) return;
@@ -645,7 +789,6 @@ document.addEventListener('DOMContentLoaded', function () {
   tiInitDropzone();
   tiInitPratinjauFoto();
   tiInitTampilJika();
-  // Buka kembali form tambah bila validasi gagal (old input tetap terisi).
   $$d('.modal-overlay[data-buka-otomatis]').forEach(function (m) { m.classList.add('show'); });
   tiInitPratinjauIkon();
   tiInitDropzoneSeret();
@@ -653,5 +796,6 @@ document.addEventListener('DOMContentLoaded', function () {
   tiInitPilihPenerima();
   tiInitLoadingSimpan();
   tiInitFokus();
+  tiInitBarisDinamis();
   tiInitFlash();
 });

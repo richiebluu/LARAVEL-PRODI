@@ -11,26 +11,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-/**
- * DATA MASTER — Sarana & Prasarana (REVISI 28-09-2026 tahap 2).
- * CRUD Staff Prodi (pola sama seperti Prospek Lulusan/Testimoni) + impor CSV
- * untuk memasukkan daftar laboratorium & ruang sekaligus.
- */
 class SaranaPrasaranaController extends Controller
 {
     use MengimporCsv;
 
-    public const KOLOM_CSV = ['nama', 'jenis', 'lokasi', 'kapasitas', 'fasilitas', 'deskripsi', 'status'];
+    public const KOLOM_CSV = ['nama', 'gedung', 'kapasitas', 'fasilitas', 'status'];
 
     public function index(Request $request)
     {
         $cari = trim((string) $request->query('q'));
-        $jenis = $request->query('jenis');
-        $jenis = array_key_exists((string) $jenis, SaranaPrasarana::JENIS) ? $jenis : null;
+        $gedung = $request->query('gedung');
+        $gedung = in_array($gedung, SaranaPrasarana::GEDUNG, true) ? $gedung : null;
 
         $sarana = SaranaPrasarana::query()
             ->cari($cari)
-            ->when($jenis, fn ($q) => $q->where('jenis', $jenis))
+            ->when($gedung, fn ($q) => $q->where('gedung', $gedung))
             ->urut()
             ->paginate(10)
             ->withQueryString();
@@ -38,10 +33,9 @@ class SaranaPrasaranaController extends Controller
         return view('staff-sarana-prasarana', [
             'daftarSarana' => $sarana,
             'cari' => $cari,
-            'jenis' => $jenis,
+            'gedung' => $gedung,
             'jumlah' => $sarana->total(),
-            'jumlahLab' => SaranaPrasarana::where('jenis', SaranaPrasarana::JENIS_LAB)->count(),
-            'daftarJenis' => SaranaPrasarana::JENIS,
+            'daftarGedung' => SaranaPrasarana::GEDUNG,
         ]);
     }
 
@@ -85,23 +79,16 @@ class SaranaPrasaranaController extends Controller
         return ImporCsv::template('template-sarana-prasarana.csv', self::KOLOM_CSV);
     }
 
-    /**
-     * Impor CSV sarana & prasarana. Kolom fasilitas: pisahkan tiap item dengan tanda | (garis tegak).
-     * Nama yang sama dianggap data yang sama (dilewati / diperbarui). Foto diisi lewat form Edit.
-     */
     public function impor(Request $request)
     {
         return $this->prosesImporCsv($request, [
             'kolom' => self::KOLOM_CSV,
-            'wajib' => ['nama', 'jenis'],
-            'alias' => ['nama_sarana' => 'nama', 'nama_ruang' => 'nama', 'nama_laboratorium' => 'nama'],
+            'wajib' => ['nama', 'gedung'],
+            'alias' => ['nama_sarana' => 'nama', 'nama_ruang' => 'nama', 'nama_laboratorium' => 'nama', 'nama_gedung' => 'gedung'],
             'label' => 'sarana & prasarana',
             'route' => 'staff-sarana-prasarana',
             'siapkan' => function (array $d) {
-                $d['jenis'] = ImporCsv::cocokkan($d['jenis'], array_keys(SaranaPrasarana::JENIS));
-                if ($d['jenis'] !== null && in_array(strtolower($d['jenis']), ['lab', 'labor'], true)) {
-                    $d['jenis'] = SaranaPrasarana::JENIS_LAB;
-                }
+                $d['gedung'] = ImporCsv::cocokkan($d['gedung'], SaranaPrasarana::GEDUNG);
                 $d['status'] = ImporCsv::cocokkan($d['status'], ['aktif' => 'Aktif', 'nonaktif' => 'Nonaktif']) ?? SaranaPrasarana::STATUS_AKTIF;
                 if ($d['fasilitas'] !== null) {
                     $d['fasilitas'] = implode("\n", array_filter(array_map('trim', explode('|', $d['fasilitas']))));
@@ -135,11 +122,9 @@ class SaranaPrasaranaController extends Controller
     {
         return [
             'nama' => ['required', 'string', 'max:150'],
-            'jenis' => ['required', Rule::in(array_keys(SaranaPrasarana::JENIS))],
-            'lokasi' => ['nullable', 'string', 'max:150'],
+            'gedung' => ['required', Rule::in(SaranaPrasarana::GEDUNG)],
             'kapasitas' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'fasilitas' => ['nullable', 'string', 'max:2000'],
-            'deskripsi' => ['nullable', 'string', 'max:1000'],
             'status' => ['required', Rule::in([SaranaPrasarana::STATUS_AKTIF, SaranaPrasarana::STATUS_NONAKTIF])],
         ];
     }
@@ -147,7 +132,7 @@ class SaranaPrasaranaController extends Controller
     private function pesan(): array
     {
         return [
-            'jenis.in' => 'Jenis harus salah satu dari: '.implode(', ', array_keys(SaranaPrasarana::JENIS)).'.',
+            'gedung.in' => 'Gedung harus salah satu dari: '.implode(', ', SaranaPrasarana::GEDUNG).'.',
             'status.in' => 'Status harus Aktif atau Nonaktif.',
         ];
     }
@@ -156,11 +141,9 @@ class SaranaPrasaranaController extends Controller
     {
         return [
             'nama' => 'Nama sarana/ruang',
-            'jenis' => 'Jenis',
-            'lokasi' => 'Lokasi',
+            'gedung' => 'Gedung',
             'kapasitas' => 'Kapasitas',
             'fasilitas' => 'Fasilitas',
-            'deskripsi' => 'Deskripsi',
         ];
     }
 

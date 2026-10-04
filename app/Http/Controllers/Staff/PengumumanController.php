@@ -15,18 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
-/**
- * Pengumuman Mahasiswa Berprestasi.
- *
- * REVISI DOSEN 01-10-2026: satu pengumuman dapat ditujukan ke BANYAK mahasiswa.
- *   PENGUMUMAN (1) --< PENGUMUMAN_PENERIMA >-- (1) MAHASISWA
- * Penerima dipilih seperti "bagikan" Google Drive: Staff mengetik email
- * @mhs.politala.ac.id, sistem mencari mahasiswa di database (cariMahasiswa),
- * lalu mahasiswa terpilih tampil sebagai chip yang dapat dihapus (×).
- */
 class PengumumanController extends Controller
 {
-    /** Batas jumlah saran pada pencarian penerima. */
     private const MAKS_SARAN = 8;
 
     public function index(Request $request)
@@ -38,7 +28,7 @@ class PengumumanController extends Controller
         }
 
         $pengumuman = Pengumuman::query()
-            ->pengumuman() // pesan notifikasi sistem tidak ikut ditampilkan
+            ->pengumuman()
             ->with(['prestasi', 'penerima.user', 'staffProdi'])
             ->withCount('penerima')
             ->when($cari !== '', fn ($q) => $q->where('judul', 'like', '%'.$cari.'%'))
@@ -50,7 +40,6 @@ class PengumumanController extends Controller
         return view('staff-pengumuman', [
             'daftarPengumuman' => $pengumuman,
             'daftarPrestasi' => Prestasi::disetujui()->with('mahasiswa')->latest('id_prestasi')->get(),
-            // Penerima yang sudah dipilih sebelum validasi gagal (agar chip tidak hilang).
             'penerimaLama' => $this->mahasiswaDariNim((array) old('penerima', [])),
             'domainEmail' => User::domainEmail('mahasiswa'),
             'cari' => $cari,
@@ -59,14 +48,6 @@ class PengumumanController extends Controller
         ]);
     }
 
-    /**
-     * Pencarian penerima (JSON) untuk input chip — data langsung dari tabel mahasiswa.
-     * GET /staff-pengumuman/cari-mahasiswa?q=rizqi@mhs&kecuali[]=NIM
-     *
-     * Hanya mahasiswa dengan email @mhs.politala.ac.id yang dapat muncul.
-     * Mahasiswa yang belum memiliki prestasi disetujui tetap ditampilkan tetapi
-     * tidak dapat dipilih (bisa_dipilih = false) beserta alasannya.
-     */
     public function cariMahasiswa(Request $request)
     {
         $kata = strtolower(trim((string) $request->query('q')));
@@ -77,7 +58,6 @@ class PengumumanController extends Controller
             return response()->json(['data' => [], 'pesan' => 'Ketik minimal 2 karakter email, nama, atau NIM mahasiswa.']);
         }
 
-        // Bila Staff mengetik email lengkap dengan domain lain -> tolak dengan pesan jelas.
         if (str_contains($kata, '@')) {
             $domainKetik = substr($kata, strpos($kata, '@') + 1);
             if ($domainKetik !== '' && ! str_starts_with($domain, $domainKetik)) {
@@ -91,7 +71,7 @@ class PengumumanController extends Controller
             ->with('user')
             ->withCount('prestasiDisetujui')
             ->emailInstitusi()
-            ->whereNotIn('nim', $kecuali) // yang sudah dipilih tidak ditampilkan lagi
+            ->whereNotIn('nim', $kecuali)
             ->where(fn ($q) => $q
                 ->whereRaw('LOWER(mahasiswa.email) LIKE ?', [$like])
                 ->orWhereHas('user', fn ($u) => $u->whereRaw('LOWER(email) LIKE ?', [$like]))
@@ -135,16 +115,14 @@ class PengumumanController extends Controller
                 'prestasi_id' => $data['prestasi_id'] ?? null,
                 'kategori' => $data['kategori'],
                 'staff_prodi_id' => $staffProdiId,
-                'nim' => null, // penerima disimpan di tabel pengumuman_penerima
+                'nim' => null,
                 'judul' => $data['judul'],
                 'isi' => $data['isi'],
                 'status' => $data['status'],
                 'tanggal_dikirim' => $terkirim ? now() : null,
-                // Teks notifikasi yang muncul di dashboard SETIAP mahasiswa penerima.
                 'notifikasi' => $terkirim ? $data['judul'] : null,
             ]);
 
-            // Simpan semua penerima (satu baris per mahasiswa, dibaca_pada = null).
             $pengumuman->penerima()->sync($data['penerima']);
 
             return $pengumuman;
@@ -161,7 +139,6 @@ class PengumumanController extends Controller
 
     public function update(Request $request, Pengumuman $pengumuman)
     {
-        // Pesan sistem (status notifikasi) bukan pengumuman Staff -> tidak boleh disunting di sini.
         abort_if($pengumuman->status === Pengumuman::STATUS_NOTIFIKASI, 404);
 
         $data = $this->validasi($request);
@@ -182,11 +159,8 @@ class PengumumanController extends Controller
                 'dibaca_pada' => null,
             ]);
 
-            // sync(): penerima yang dihapus (×) dilepas, penerima baru ditambahkan,
-            // penerima lama tetap (status bacanya tidak berubah).
             $hasil = $pengumuman->penerima()->sync($data['penerima']);
 
-            // Baru berubah dari draft -> terkirim: semua penerima belum membaca.
             if ($baruTerkirim) {
                 DB::table('pengumuman_penerima')
                     ->where('pengumuman_id', $pengumuman->id_pengumuman)
@@ -196,7 +170,6 @@ class PengumumanController extends Controller
             return $hasil['attached'];
         });
 
-        // Email: semua penerima bila baru dikirim, atau hanya penerima tambahan bila sudah terkirim.
         if ($baruTerkirim) {
             $this->kirimEmail($pengumuman, $data['penerima']);
         } elseif ($terkirim && $penerimaBaru) {
@@ -213,7 +186,7 @@ class PengumumanController extends Controller
         abort_if($pengumuman->status === Pengumuman::STATUS_NOTIFIKASI, 404);
 
         $judul = $pengumuman->judul;
-        $pengumuman->delete(); // baris pengumuman_penerima ikut terhapus (cascade)
+        $pengumuman->delete();
 
         return redirect()
             ->route('staff-pengumuman')
@@ -225,7 +198,6 @@ class PengumumanController extends Controller
         $domain = User::domainEmail('mahasiswa');
 
         $data = $request->validate([
-            // Banyak penerima: array NIM dari chip; tidak boleh ada yang dobel.
             'penerima' => ['required', 'array', 'min:1', 'max:500'],
             'penerima.*' => ['required', 'string', 'distinct', 'exists:mahasiswa,nim'],
             'kategori' => ['required', Rule::in(Pengumuman::daftarKategori())],
@@ -247,7 +219,6 @@ class PengumumanController extends Controller
 
         $nim = array_values(array_unique($data['penerima']));
 
-        // Setiap penerima wajib: email @mhs.politala.ac.id DAN mahasiswa berprestasi.
         $valid = Mahasiswa::query()->whereIn('nim', $nim)->emailInstitusi()->berprestasi()->pluck('nim')->all();
         $tidakValid = array_values(array_diff($nim, $valid));
 
@@ -259,7 +230,6 @@ class PengumumanController extends Controller
             ]);
         }
 
-        // Prestasi terkait (opsional) harus prestasi disetujui milik SALAH SATU penerima.
         if (! empty($data['prestasi_id'])) {
             $prestasi = Prestasi::disetujui()->whereKey($data['prestasi_id'])->whereIn('nim', $nim)->first();
 
@@ -269,7 +239,6 @@ class PengumumanController extends Controller
                 ]);
             }
 
-            // Kategori mengikuti kategori prestasi yang dipilih.
             $data['kategori'] = $prestasi->kategori;
         }
 
@@ -278,11 +247,6 @@ class PengumumanController extends Controller
         return $data;
     }
 
-    /**
-     * Pengumuman terkirim -> EMAIL (Gmail) ke setiap mahasiswa penerima (REVISI 26-09-2026).
-     * Notifikasi dashboard sudah tersimpan per mahasiswa di tabel pengumuman_penerima.
-     * Kegagalan email satu mahasiswa tidak membatalkan pengumuman / email lainnya.
-     */
     private function kirimEmail(Pengumuman $pengumuman, array $nim): void
     {
         $pengumuman->loadMissing('prestasi');
@@ -308,7 +272,6 @@ class PengumumanController extends Controller
         }
     }
 
-    /** Ambil data mahasiswa (dengan akun) dari daftar NIM, urut sesuai daftar. */
     private function mahasiswaDariNim(array $nim): Collection
     {
         $nim = array_values(array_filter($nim, 'is_string'));

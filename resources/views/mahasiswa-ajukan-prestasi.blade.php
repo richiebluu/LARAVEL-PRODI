@@ -12,38 +12,17 @@
 <body data-page="mahasiswa-ajukan-prestasi">
   <div class="admin-shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-badge brand-logo"><img src="{{ asset('images/logo-ti.png') }}" alt="Logo Program Studi Teknologi Informasi"></div>
-      <div>
-        <span class="b1">POLITALA</span>
-        <span class="b2">Dashboard Mahasiswa</span>
-      </div>
-    </div>
-    <nav class="sidebar-menu">
-      <div class="menu-label">MENU UTAMA</div>
-      <a href="{{ url('/mahasiswa-dashboard') }}" class="side-link"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-      <a href="{{ url('/mahasiswa-profile') }}" class="side-link"><i class="fa-solid fa-id-card"></i> Profil Saya</a>
-      <a href="{{ url('/mahasiswa-prestasi') }}" class="side-link"><i class="fa-solid fa-trophy"></i> Prestasi Saya</a>
-      <a href="{{ url('/mahasiswa-ajukan-prestasi') }}" class="side-link"><i class="fa-solid fa-plus"></i> Ajukan Prestasi</a>
-      <a href="{{ url('/ranking') }}" class="side-link"><i class="fa-solid fa-ranking-star"></i> Ranking</a>
-      <a href="{{ url('/mahasiswa-pengumuman') }}" class="side-link"><i class="fa-solid fa-bullhorn"></i> Pengumuman</a>
-      <a href="{{ url('/mahasiswa-notifikasi') }}" class="side-link"><i class="fa-solid fa-bell"></i> Notifikasi</a>
-      <div class="menu-label">WEBSITE PUBLIK</div>
-      <a href="{{ url('/') }}" class="side-link"><i class="fa-solid fa-globe"></i> Lihat Website</a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#" class="side-link logout" data-logout><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-    </div>
-  </aside>
+  {{-- Sidebar --}}
+  @include('partials.mahasiswa-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
             <h1>Ajukan Prestasi</h1>
-            <div class="subtitle">Isi data prestasi dan unggah bukti untuk diverifikasi Staff Prodi.</div>
+            <div class="subtitle">Isi data prestasi dan unggah sertifikat untuk diverifikasi Staff Prodi.</div>
           </div>
         </div>
         <div class="admin-profile">
@@ -98,11 +77,11 @@
               <div class="form-group full"><label>Deskripsi</label>
                 <textarea name="deskripsi" rows="3" placeholder="Ceritakan singkat lomba dan capaianmu">{{ old('deskripsi') }}</textarea></div>
               <div class="form-group full">
-                <label>Upload Bukti</label>
-                <div class="dropzone" id="dropzone" data-file-input="fileBukti" data-file-info="namaFile">
+                <label for="fileSertifikat">Upload Sertifikat</label>
+                <div class="dropzone" id="dropzone" data-file-input="fileSertifikat" data-file-info="namaFile">
                   <strong><i class="fa-solid fa-cloud-arrow-up"></i> Pilih berkas sertifikat</strong>PDF atau gambar, maksimal 4 MB. Berkas diunggah ke server.
                 </div>
-                <input type="file" name="dokumen" id="fileBukti" accept=".pdf,image/*" hidden>
+                <input type="file" name="dokumen" id="fileSertifikat" accept=".pdf,image/*" hidden>
                 <div class="form-hint" id="namaFile"></div>
               </div>
             </div>
@@ -115,14 +94,15 @@
         <div class="panel">
           <div class="panel-head"><h2>Alur Verifikasi</h2></div>
           <div class="timeline">
-            <div class="timeline-item"><div class="timeline-year">1</div><h4>Mahasiswa mengajukan</h4><p>Data dan bukti dikirim lewat formulir ini dan langsung tersimpan di database.</p></div>
+            <div class="timeline-item"><div class="timeline-year">1</div><h4>Mahasiswa mengajukan</h4><p>Data dan sertifikat dikirim lewat formulir ini dan langsung tersimpan di database.</p></div>
             <div class="timeline-item"><div class="timeline-year">2</div><h4>Status menunggu</h4><p>Pengajuan masuk ke antrean verifikasi Staff Prodi.</p></div>
-            <div class="timeline-item"><div class="timeline-year">3</div><h4>Staff menyetujui atau menolak</h4><p>Kamu menerima notifikasi beserta alasannya bila ditolak.</p></div>
+            <div class="timeline-item"><div class="timeline-year">3</div><h4>Staff menyetujui atau menolak</h4><p>Kamu menerima informasi di menu Pengumuman beserta alasannya bila ditolak.</p></div>
             <div class="timeline-item"><div class="timeline-year">4</div><h4>Poin masuk ranking</h4><p>Prestasi yang disetujui tampil di halaman Mahasiswa Berprestasi dan poinnya dihitung pada ranking.</p></div>
           </div>
 
           <div class="panel-head" style="margin-top:24px;"><h2>Poin Tingkat Prestasi</h2></div>
           <div class="table-wrap">
+            {{-- Tabel --}}
             <table class="data-table">
               <thead><tr><th>Tingkat Prestasi</th><th>Prestasi Akademik</th><th>Prestasi Non-Akademik</th></tr></thead>
               <tbody>
@@ -140,7 +120,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

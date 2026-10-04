@@ -12,15 +12,17 @@
 <body data-page="staff-prestasi">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
             <h1>Data Prestasi</h1>
-            <div class="subtitle">Tinjau bukti, kategori, dan tingkat prestasi untuk perhitungan poin.</div>
+            <div class="subtitle">Tinjau sertifikat, kategori, dan tingkat prestasi untuk perhitungan poin.</div>
           </div>
         </div>
         <div class="admin-profile">
@@ -60,6 +62,7 @@
           </form>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Mahasiswa</th><th>Prestasi</th><th>Kategori</th><th>Tingkat Prestasi</th><th>Poin</th><th>Tanggal</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
@@ -70,8 +73,6 @@
                   <td>{{ $p->judul }}</td>
                   <td><span class="badge badge-blue">{{ $p->kategori }}</span></td>
                   <td>{{ $p->tingkat ?? '-' }}</td>
-                  {{-- Label "Approved/Disetujui" dihapus sesuai revisi dosen. Prestasi yang sudah
-                       diverifikasi cukup ditampilkan poinnya; hanya status menunggu/ditolak yang diberi label. --}}
                   <td>
                     <span class="badge badge-blue" style="white-space:nowrap;">{{ $p->poin }} poin</span>
                     @if ($p->status === 'menunggu')
@@ -82,10 +83,11 @@
                   </td>
                   <td>{{ optional($p->tanggal)->translatedFormat('d F Y') ?? '-' }}</td>
                   <td class="actions">
-                    <button class="btn btn-outline btn-sm btn-icon" title="Lihat detail" data-modal-open="modalPrestasi{{ $p->id_prestasi }}"><i class="fa-solid fa-eye"></i></button>
+                    <button class="btn btn-outline btn-sm btn-icon" title="Detail" data-modal-open="modalPrestasi{{ $p->id_prestasi }}"><i class="fa-solid fa-eye"></i></button>
                     @if ($p->status !== 'disetujui')
                       <form method="POST" action="{{ route('staff-prestasi.verifikasi', $p) }}" style="display:inline;"
-                            data-konfirmasi="Setujui prestasi ini? Poinnya akan dihitung pada ranking dan tampil di halaman publik.">
+                            data-konfirmasi="Setujui prestasi ini? Poinnya akan dihitung pada ranking dan tampil di halaman publik."
+                            data-konfirmasi-tipe="sukses" data-konfirmasi-judul="Setujui Prestasi?" data-konfirmasi-tombol="Ya, Setujui">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="status" value="disetujui">
@@ -115,6 +117,7 @@
       </div>
 
       @foreach ($daftarPrestasi as $p)
+        {{-- Modal Detail Pengajuan Prestasi --}}
         <div class="modal-overlay" id="modalPrestasi{{ $p->id_prestasi }}">
           <div class="modal-box">
             <div class="modal-head"><h3>Detail Pengajuan Prestasi</h3>
@@ -137,14 +140,14 @@
               @endif
               @if ($p->dokumen_url)
                 <a class="dropzone" style="margin-top:14px; display:block; text-decoration:none;" href="{{ $p->dokumen_url }}" target="_blank" rel="noopener">
-                  <strong><i class="fa-solid fa-paperclip"></i> Lihat berkas bukti</strong>Berkas diunggah mahasiswa dan tersimpan di server.
+                  <strong><i class="fa-solid fa-paperclip"></i> Lihat sertifikat</strong>Sertifikat diunggah mahasiswa dan tersimpan di server.
                 </a>
               @else
-                <div class="dropzone" style="margin-top:14px;"><strong><i class="fa-solid fa-paperclip"></i> Tidak ada berkas bukti</strong>Mahasiswa tidak melampirkan dokumen.</div>
+                <div class="dropzone" style="margin-top:14px;"><strong><i class="fa-solid fa-paperclip"></i> Tidak ada sertifikat</strong>Mahasiswa tidak melampirkan sertifikat.</div>
               @endif
             </div>
             <div class="modal-foot">
-              <form method="POST" action="{{ route('staff-prestasi.destroy', $p) }}" data-konfirmasi="Hapus prestasi ini secara permanen?">
+              <form method="POST" action="{{ route('staff-prestasi.destroy', $p) }}" data-konfirmasi="Hapus prestasi ini secara permanen?" data-konfirmasi-judul="Hapus Prestasi?">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Hapus</button>
@@ -154,6 +157,7 @@
           </div>
         </div>
 
+        {{-- Modal Tolak Prestasi --}}
         <div class="modal-overlay" id="modalTolak{{ $p->id_prestasi }}">
           <div class="modal-box">
             <form method="POST" action="{{ route('staff-prestasi.verifikasi', $p) }}">
@@ -165,7 +169,7 @@
               <div class="modal-body">
                 <div class="form-group">
                   <label>Alasan penolakan</label>
-                  <textarea name="catatan" rows="3" placeholder="Contoh: bukti sertifikat tidak terbaca"></textarea>
+                  <textarea name="catatan" rows="3" placeholder="Contoh: sertifikat tidak terbaca"></textarea>
                   <div class="form-hint">Alasan akan terlihat oleh mahasiswa pada halaman Prestasi Saya.</div>
                 </div>
               </div>
@@ -182,7 +186,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

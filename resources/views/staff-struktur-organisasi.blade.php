@@ -12,9 +12,11 @@
 <body data-page="staff-struktur-organisasi">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -51,20 +53,24 @@
           </div>
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
             <a href="{{ url('/struktur-organisasi') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-globe"></i> Lihat Halaman Publik</a>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahStruktur"><i class="fa-solid fa-plus"></i> Tambah Jabatan</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
-            <thead><tr><th>No</th><th>Foto</th><th>Jabatan</th><th>Nama Pejabat</th><th>Sumber Data</th><th style="text-align:right;">Aksi</th></tr></thead>
+            <thead><tr><th>No</th><th>Foto</th><th>Jabatan</th><th>Tingkat</th><th>Nama</th><th>Sumber Data</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
               @forelse ($daftarStruktur as $s)
                 <tr>
                   <td>{{ $loop->iteration }}</td>
                   <td><div class="table-thumb" @if ($s->foto_url) style="background-image:url('{{ $s->foto_url }}')" @else style="background-color:var(--grey-100);" @endif></div></td>
-                  <td><strong>{{ $s->jabatan }}</strong></td>
+                  <td><strong>{{ $s->jabatan }}</strong>
+                    @if ($s->jabatan_di_luar_daftar)<span class="badge-note">Jabatan lama di luar daftar — pilih ulang lewat Edit.</span>@endif</td>
+                  <td>{{ $s->jabatan_di_luar_daftar ? '-' : $s->tingkat }}</td>
                   <td>{{ $s->nama_pejabat }}</td>
-                  <td>@if ($s->dosen)<span class="badge badge-blue">Data Dosen</span>@else<span class="badge badge-grey">Nama manual</span>@endif</td>
+                  <td>@if ($s->dosen)<span class="badge badge-blue">Daftar Dosen</span>@else<span class="badge badge-grey">Nama Staff</span>@endif</td>
                   <td class="actions">
                     <button class="btn btn-outline btn-sm btn-icon" title="Edit"
                       data-modal-open="modalEditStruktur"
@@ -72,7 +78,7 @@
                       data-action="{{ route('staff-struktur-organisasi.update', $s) }}"
                       data-judul-modal="Edit Jabatan"
                       data-foto="{{ $s->foto_url }}"
-                      data-nilai="{{ json_encode(['jabatan' => $s->jabatan, 'dosen_id' => $s->dosen_id, 'nama' => $s->nama]) }}"><i class="fa-solid fa-pen"></i></button>
+                      data-nilai="{{ json_encode(['jabatan' => $s->jabatan_di_luar_daftar ? '' : $s->jabatan, 'dosen_id' => $s->dosen_id, 'nama' => $s->nama]) }}"><i class="fa-solid fa-pen"></i></button>
                     <form method="POST" action="{{ route('staff-struktur-organisasi.destroy', $s) }}" style="display:inline;" data-konfirmasi="Hapus jabatan {{ $s->jabatan }}?">
                       @csrf
                       @method('DELETE')
@@ -81,19 +87,19 @@
                   </td>
                 </tr>
               @empty
-                <tr class="empty-row"><td colspan="6"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>Belum ada data struktur organisasi.</td></tr>
+                <tr class="empty-row"><td colspan="7"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>Belum ada data struktur organisasi.</td></tr>
               @endforelse
             </tbody>
           </table>
         </div>
       </div>
 
-      <datalist id="saranJabatan">
-        @foreach ($saranJabatan as $j)
-          <option value="{{ $j }}">
-        @endforeach
-      </datalist>
+      <p class="form-hint" style="margin:14px 0 0 0;"><i class="fa-solid fa-circle-info"></i>
+        Urutan jabatan (atas &rarr; bawah):
+        @foreach ($daftarJabatan as $j){{ $j }}@if (! $loop->last) &rarr; @endif @endforeach.
+        Bagan di halaman publik tersusun otomatis mengikuti urutan ini.</p>
 
+      {{-- Modal Tambah Jabatan --}}
       <div class="modal-overlay" id="modalTambahStruktur">
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-struktur-organisasi.store') }}" enctype="multipart/form-data">
@@ -102,23 +108,29 @@
               <button type="button" class="modal-close" data-modal-close><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
               <div class="form-grid">
-                <div class="form-group full"><label>Jabatan *</label><input name="jabatan" list="saranJabatan" value="{{ old('jabatan') }}" placeholder="Contoh: Koordinator Program Studi" required>
-                  <div class="form-hint">Pilih saran atau ketik jabatan lain (mis. Koordinator Gugus ...).</div></div>
-                <div class="form-group full"><label>Pejabat dari Data Dosen</label>
+                <div class="form-group full"><label>Jabatan *</label>
+                  <select name="jabatan" required>
+                    <option value="">-- Pilih Jabatan --</option>
+                    @foreach ($daftarJabatan as $j)
+                      <option value="{{ $j }}" @selected(old('jabatan') === $j)>{{ $loop->iteration }}. {{ $j }}</option>
+                    @endforeach
+                  </select>
+                  <div class="form-hint">Daftar berurutan dari jabatan tertinggi; posisi di bagan publik mengikuti jabatan.</div></div>
+                <div class="form-group full"><label>Daftar Dosen</label>
                   <select name="dosen_id">
-                    <option value="">-- Bukan dosen / isi nama manual --</option>
+                    <option value="">-- Bukan dosen / isi Nama Staff --</option>
                     @foreach ($daftarDosen as $dsn)
                       <option value="{{ $dsn->nuptk }}" @selected(old('dosen_id') == $dsn->nuptk)>{{ $dsn->nama }}</option>
                     @endforeach
                   </select></div>
-                <div class="form-group"><label>Nama Pejabat</label><input name="nama" value="{{ old('nama') }}">
-                  <div class="form-hint">Wajib bila pejabat tidak dipilih dari data dosen.</div></div>
-                <div class="form-group full"><label>Foto Pejabat</label>
+                <div class="form-group"><label>Nama Staff</label><input name="nama" value="{{ old('nama') }}">
+                  <div class="form-hint">Wajib bila tidak dipilih dari Daftar Dosen.</div></div>
+                <div class="form-group full"><label>Foto</label>
                   <div style="display:flex; gap:12px; align-items:center;">
                     <div class="table-thumb" data-foto-preview style="background-color:var(--grey-100);"></div>
                     <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview-foto style="flex:1; min-width:0;">
                   </div>
-                  <div class="form-hint">JPG/PNG/WEBP, maksimal 2 MB. Bila kosong, foto diambil dari data dosen (jika dipilih).</div></div>
+                  <div class="form-hint">JPG/PNG/WEBP, maksimal 2 MB. Bila kosong, foto diambil dari Daftar Dosen (jika dipilih).</div></div>
               </div>
             </div>
             <div class="modal-foot">
@@ -129,6 +141,7 @@
         </div>
       </div>
 
+      {{-- Modal Edit Jabatan --}}
       <div class="modal-overlay" id="modalEditStruktur">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditStruktur" enctype="multipart/form-data">
@@ -138,18 +151,24 @@
               <button type="button" class="modal-close" data-modal-close><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
               <div class="form-grid">
-                <div class="form-group full"><label>Jabatan *</label><input name="jabatan" list="saranJabatan" placeholder="Contoh: Koordinator Program Studi" required>
-                  <div class="form-hint">Pilih saran atau ketik jabatan lain (mis. Koordinator Gugus ...).</div></div>
-                <div class="form-group full"><label>Pejabat dari Data Dosen</label>
+                <div class="form-group full"><label>Jabatan *</label>
+                  <select name="jabatan" required>
+                    <option value="">-- Pilih Jabatan --</option>
+                    @foreach ($daftarJabatan as $j)
+                      <option value="{{ $j }}">{{ $loop->iteration }}. {{ $j }}</option>
+                    @endforeach
+                  </select>
+                  <div class="form-hint">Daftar berurutan dari jabatan tertinggi; posisi di bagan publik mengikuti jabatan.</div></div>
+                <div class="form-group full"><label>Daftar Dosen</label>
                   <select name="dosen_id">
-                    <option value="">-- Bukan dosen / isi nama manual --</option>
+                    <option value="">-- Bukan dosen / isi Nama Staff --</option>
                     @foreach ($daftarDosen as $dsn)
                       <option value="{{ $dsn->nuptk }}">{{ $dsn->nama }}</option>
                     @endforeach
                   </select></div>
-                <div class="form-group"><label>Nama Pejabat</label><input name="nama">
-                  <div class="form-hint">Wajib bila pejabat tidak dipilih dari data dosen.</div></div>
-                <div class="form-group full"><label>Ganti Foto Pejabat</label>
+                <div class="form-group"><label>Nama Staff</label><input name="nama">
+                  <div class="form-hint">Wajib bila tidak dipilih dari Daftar Dosen.</div></div>
+                <div class="form-group full"><label>Ganti Foto</label>
                   <div style="display:flex; gap:12px; align-items:center;">
                     <div class="table-thumb" data-foto-preview style="background-color:var(--grey-100);"></div>
                     <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview-foto style="flex:1; min-width:0;">
@@ -170,7 +189,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

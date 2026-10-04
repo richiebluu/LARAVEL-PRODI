@@ -1,8 +1,3 @@
-{{-- Isian form pengumuman. Pilihan mahasiswa & prestasi berasal dari database.
-     REVISI 24-09 & 26-09-2026: penerima = mahasiswa berprestasi (prestasi disetujui), bukan berdasarkan ranking.
-     REVISI DOSEN 01-10-2026: penerima BANYAK mahasiswa, dipilih seperti "bagikan" Google Drive —
-     ketik email @mhs.politala.ac.id -> pilih dari hasil pencarian database -> tampil sebagai chip (×).
-     Setiap chip mengirim <input type="hidden" name="penerima[]" value="NIM">. --}}
 @php
   $penerimaAwal = $penerimaAwal ?? collect();
   $pakaiOld = $pakaiOld ?? false;
@@ -34,7 +29,7 @@
     <div class="form-hint">
       Cari dengan email <strong>&#64;{{ $domainEmail }}</strong> (juga bisa nama atau NIM). Hanya mahasiswa berprestasi
       (memiliki prestasi yang sudah disetujui) yang dapat dipilih. Klik &times; untuk menghapus penerima.
-      Saat status Terkirim, setiap penerima mendapat notifikasi di dashboard dan email (Gmail).
+      Saat status Terkirim, setiap penerima mendapat pengumuman di dashboard (menu Pengumuman) dan email (Gmail).
     </div>
   </div>
 

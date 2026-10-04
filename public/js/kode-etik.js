@@ -1,26 +1,11 @@
-/* ==========================================================================
-   KODE ETIK MAHASISWA — PENAMPIL PDF UKURAN PENUH
-   REVISI 28-09-2026 tahap 2 ("REVISI BARU(1).docx"): dokumen ditampilkan langsung
-   sebagai PDF dan tiap lembar FULL selebar area konten (bukan setengah seperti
-   tampilan buku dua halaman sebelumnya).
-
-   Sumber data: PDF Kode Etik yang diunggah Staff Prodi (atribut data-pdf).
-   - PDF.js (cdnjs, sama seperti Font Awesome) merender tiap halaman ke <canvas>
-     secara bertahap (hanya halaman yang mendekati layar) agar ringan.
-   - Mode "Lebar Penuh" (bawaan): lembar selebar area baca.
-     Mode "Satu Halaman": satu lembar utuh terlihat setinggi layar.
-     Zoom +/- tetap tersedia; bila lebih lebar dari layar, area baca dapat digeser.
-   - Navigasi: tombol naik/turun, isi nomor halaman, keyboard ← → PgUp PgDn.
-   - Bila PDF.js gagal dimuat, penampil PDF bawaan browser dipakai dengan tinggi
-     mengikuti rasio lembar A4 (tetap penuh, tidak setengah).
-   ========================================================================== */
+/* Kode Etik Mahasiswa */
 (function () {
   'use strict';
 
   var PDFJS_VERSI = '3.11.174';
   var PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSI + '/pdf.min.js';
   var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSI + '/pdf.worker.min.js';
-  var BATAS_TUNGGU = 12000;   // ms menunggu PDF.js + dokumen sebelum memakai cadangan
+  var BATAS_TUNGGU = 12000;
   var RASIO_A4 = 1.4142;
   var ZOOM_MIN = 0.5, ZOOM_MAKS = 3, LANGKAH_ZOOM = 0.25;
 
@@ -41,16 +26,16 @@
 
   var pdf = null;
   var total = 0;
-  var ukuran = [];          // [{w, h}] ukuran asli tiap halaman (skala 1)
-  var lembar = [];          // elemen .kodetik-lembar
-  var mode = 'lebar';       // 'lebar' | 'halaman' | 'bebas'
-  var zoom = 1;             // relatif terhadap mode lebar penuh
+  var ukuran = [];
+  var lembar = [];
+  var mode = 'lebar';
+  var zoom = 1;
   var halAktif = 1;
-  var versiRender = 0;      // naik setiap ukuran berubah -> render ulang
+  var versiRender = 0;
   var pengamat = null;
   var selesai = false;
 
-  /* ---------- Toolbar menempel tepat di bawah navbar ---------- */
+  /* Toolbar menempel tepat di bawah navbar */
   function aturPosisiBar() {
     if (!bar || !navbar || document.fullscreenElement) return;
     var tinggi = navbar.getBoundingClientRect().height;
@@ -61,7 +46,7 @@
   window.addEventListener('resize', aturPosisiBar);
   aturPosisiBar();
 
-  /* ---------- Cadangan: penampil PDF bawaan ---------- */
+  /* Cadangan */
   function pakaiCadangan() {
     if (selesai) return;
     selesai = true;
@@ -80,7 +65,7 @@
     window.addEventListener('resize', sesuaikan);
   }
 
-  /* ---------- Muat PDF.js ---------- */
+  /* Muat PDF.js */
   function muatPdfJs() {
     return new Promise(function (resolve, reject) {
       if (window.pdfjsLib) return resolve(window.pdfjsLib);
@@ -88,7 +73,6 @@
       s.src = PDFJS_URL;
       s.async = true;
       s.onload = function () {
-        // Tunggu sebentar bila pustaka baru terdaftar setelah skrip selesai dimuat.
         var coba = 0;
         (function cek() {
           if (window.pdfjsLib) return resolve(window.pdfjsLib);
@@ -101,7 +85,7 @@
     });
   }
 
-  /* ---------- Ukuran lembar ---------- */
+  /* Ukuran lembar */
   function lebarArea() {
     var gaya = window.getComputedStyle(stage);
     return stage.clientWidth - parseFloat(gaya.paddingLeft) - parseFloat(gaya.paddingRight);
@@ -113,7 +97,6 @@
     return Math.max(320, window.innerHeight - atas - 40);
   }
 
-  // Lebar CSS (px) sebuah halaman sesuai mode & zoom.
   function lebarHalaman(i) {
     var u = ukuran[i] || ukuran[0];
     var penuh = lebarArea();
@@ -142,7 +125,7 @@
     renderTerlihat();
   }
 
-  /* ---------- Render halaman (bertahap) ---------- */
+  /* Render halaman */
   var antrean = Promise.resolve();
 
   function render(i) {
@@ -171,7 +154,7 @@
           el.setAttribute('data-versi', String(versi));
         });
       });
-    }).catch(function () { /* halaman gagal dirender: biarkan placeholder */ });
+    }).catch(function () {  });
   }
 
   function renderTerlihat() {
@@ -182,7 +165,7 @@
     });
   }
 
-  /* ---------- Halaman aktif & navigasi ---------- */
+  /* Halaman aktif & navigasi */
   function perbaruiHalAktif() {
     if (!lembar.length) return;
     var patokan = (bar ? bar.getBoundingClientRect().bottom : 0) + 40;
@@ -220,7 +203,7 @@
     });
   }
 
-  /* ---------- Kontrol toolbar ---------- */
+  /* Kontrol toolbar */
   reader.addEventListener('click', function (e) {
     var tombol = e.target.closest ? e.target.closest('[data-kodetik]') : null;
     if (!tombol || !pdf) return;
@@ -285,7 +268,7 @@
     }, 200);
   });
 
-  /* ---------- Mulai ---------- */
+  /* Mulai */
   var batas = setTimeout(pakaiCadangan, BATAS_TUNGGU);
 
   muatPdfJs().then(function (lib) {
@@ -298,7 +281,6 @@
     if (teksTotal) teksTotal.textContent = total;
     if (inputHal) inputHal.max = total;
 
-    // Ukuran asli tiap halaman (umumnya sama semua; dibaca bertahap agar cepat tampil).
     return dok.getPage(1).then(function (p1) {
       var v = p1.getViewport({ scale: 1 });
       for (var i = 0; i < total; i++) ukuran.push({ w: v.width, h: v.height });
@@ -321,7 +303,6 @@
       terapkanUkuran();
       perbaruiHalAktif();
 
-      // Halaman dengan ukuran berbeda (mis. lampiran lanskap) diperbarui setelah dibaca.
       var tugas = [];
       for (var k = 2; k <= total; k++) {
         (function (idx) {

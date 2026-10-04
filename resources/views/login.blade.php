@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login | Program Studi Teknologi Informasi</title>
+<title>{{ __('Login | Program Studi Teknologi Informasi') }}</title>
 <meta name="description" content="Login Mahasiswa dan Staff Prodi Teknologi Informasi.">
 <link rel="icon" href="{{ asset('images/logo-ti.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -43,14 +43,11 @@
     font-family:var(--font-body); font-size:.9rem; outline:none; transition:border-color .2s ease;
   }
   .input-wrap input:focus{ border-color:var(--blue-600); }
-  /* Pilihan jenis akun memakai gaya input yang sama. */
   .input-wrap select{
     width:100%; padding:13px 16px 13px 44px; border-radius:12px; border:1.5px solid var(--grey-300);
     font-family:var(--font-body); font-size:.9rem; outline:none; transition:border-color .2s ease; background:#fff; color:var(--navy-900);
   }
   .input-wrap select:focus{ border-color:var(--blue-600); }
-  /* Logo resmi Prodi TI menggantikan huruf "P" (ukuran badge tetap). */
-  /* Latar form login terang -> logo navy asli tanpa kotak. */
   .login-card .brand-badge.brand-logo{ background:transparent; padding:0; border-radius:0; }
   .input-wrap .toggle-pass{ position:absolute; right:16px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--grey-500); cursor:pointer; font-size:.9rem; }
 
@@ -79,98 +76,92 @@
 
   <div class="login-shell">
     <div class="login-visual">
-      <img src="{{ asset('images/Kodex.png') }}" alt="Kodex - Maskot Program Studi Teknologi Informasi">
-      <h2>Satu Pintu untuk Mahasiswa &amp; Staff Prodi</h2>
-      <p>Mahasiswa mengajukan prestasi dan memperbarui profil, Staff Prodi mengelola Data Master dan memverifikasi prestasi.</p>
+      <img src="{{ asset('images/Kodex.png') }}" alt="{{ __('Kodex - Maskot Program Studi Teknologi Informasi') }}">
+      <h2>{{ __('Satu Pintu untuk Mahasiswa & Staff Prodi') }}</h2>
+      <p>{{ __('Mahasiswa mengajukan prestasi dan memperbarui profil, Staff Prodi mengelola Data Master dan memverifikasi prestasi.') }}</p>
       <div class="login-badge-row">
-        <span><i class="fa-solid fa-user-graduate"></i> Mahasiswa</span>
-        <span><i class="fa-solid fa-user-shield"></i> Staff Prodi</span>
+        <span><i class="fa-solid fa-user-graduate"></i> {{ __('Mahasiswa') }}</span>
+        <span><i class="fa-solid fa-user-shield"></i> {{ __('Staff Prodi') }}</span>
       </div>
     </div>
 
     <div class="login-form-side">
       <div class="login-card">
         <div class="brand">
-          <div class="brand-badge brand-logo"><img src="{{ asset('images/logo-ti.png') }}" alt="Logo Program Studi Teknologi Informasi"></div>
+          <div class="brand-badge brand-logo"><img src="{{ asset('images/logo-ti.png') }}" alt="{{ __('Logo Program Studi Teknologi Informasi') }}"></div>
           <div class="brand-text">
             <span class="b1">POLITALA</span>
-            <span class="b2">Program Studi Teknologi Informasi</span>
+            <span class="b2">{{ __('Program Studi Teknologi Informasi') }}</span>
           </div>
         </div>
 
-        <h1>Masuk ke Sistem</h1>
-        <p class="login-lead">Gunakan akun Mahasiswa atau Staff Prodi.</p>
+        <h1>{{ __('Masuk ke Sistem') }}</h1>
+        <p class="login-lead">{{ __('Gunakan akun Mahasiswa atau Staff Prodi.') }}</p>
 
         <div class="login-error {{ $errors->any() ? 'show' : '' }}" id="loginError">
           <i class="fa-solid fa-circle-exclamation"></i>
-          <span>{{ $errors->first() ?: 'Email atau password salah.' }}</span>
+          <span>{{ $errors->first() ?: __('Email atau password salah.') }}</span>
         </div>
 
         <form id="loginForm" method="POST" action="{{ route('login.process') }}">
           @csrf
           <div class="field-group">
-            <label for="role">Masuk Sebagai</label>
+            <label for="role">{{ __('Masuk Sebagai') }}</label>
             <div class="input-wrap">
               <i class="fa-solid fa-user-tag left-icon"></i>
               <select id="role" name="role" required>
-                <option value="">-- Pilih jenis akun --</option>
+                <option value="">{{ __('-- Pilih jenis akun --') }}</option>
                 @foreach (\App\Models\User::ROLE as $kodeRole => $labelRole)
-                  <option value="{{ $kodeRole }}" data-domain="{{ \App\Models\User::domainEmail($kodeRole) }}" @selected(old('role') === $kodeRole)>{{ $labelRole }}</option>
+                  <option value="{{ $kodeRole }}" data-domain="{{ \App\Models\User::domainEmail($kodeRole) }}" @selected(old('role') === $kodeRole)>{{ __($labelRole) }}</option>
                 @endforeach
               </select>
             </div>
           </div>
 
           <div class="field-group">
-            <label>Email</label>
+            <label>{{ __('Email') }}</label>
             <div class="input-wrap">
               <i class="fa-solid fa-user left-icon"></i>
-              <input type="email" id="username" name="email" value="{{ old('email') }}" placeholder="nama@politala.ac.id" autocomplete="username" required>
+              <input type="email" id="username" name="email" value="{{ old('email') }}" placeholder="{{ __('nama@politala.ac.id') }}" autocomplete="username" required>
             </div>
           </div>
 
           <div class="field-group">
-            <label>Password</label>
+            <label>{{ __('Password') }}</label>
             <div class="input-wrap">
               <i class="fa-solid fa-lock left-icon"></i>
-              <input type="password" id="password" name="password" placeholder="Masukkan password" autocomplete="current-password" required>
-              <button type="button" class="toggle-pass" id="togglePass" aria-label="Tampilkan password"><i class="fa-solid fa-eye"></i></button>
+              <input type="password" id="password" name="password" placeholder="{{ __('Masukkan password') }}" autocomplete="current-password" required>
+              <button type="button" class="toggle-pass" id="togglePass" aria-label="{{ __('Tampilkan password') }}"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
 
           <div class="field-row">
             <label class="remember-check">
               <input type="checkbox" id="rememberMe" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
-              Ingat saya
+              {{ __('Ingat saya') }}
             </label>
           </div>
 
           <button type="submit" class="btn btn-primary" style="width:100%;">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard
+            <i class="fa-solid fa-right-to-bracket"></i> {{ __('Masuk ke Dashboard') }}
           </button>
         </form>
 
-        {{-- REVISI 26-09-2026: Login dengan Google (Google OAuth / Laravel Socialite).
-             Hanya email @mhs.politala.ac.id (Mahasiswa) dan @politala.ac.id (Staff Prodi)
-             yang SUDAH TERDAFTAR di database yang dapat masuk. --}}
         <a href="{{ route('login.google') }}" class="btn btn-outline" style="width:100%; margin-top:12px;">
-          <i class="fa-brands fa-google"></i> Login dengan Google
+          <i class="fa-brands fa-google"></i> {{ __('Login dengan Google') }}
         </a>
-
 
         <div class="login-note">
           <i class="fa-solid fa-circle-info"></i>
-          <span>Pilih jenis akun sesuai role Anda. Mahasiswa memakai email <code>&#64;{{ \App\Models\User::domainEmail('mahasiswa') }}</code>, Staff Prodi memakai email <code>&#64;{{ \App\Models\User::domainEmail('staff') }}</code>. Login dengan Google hanya untuk email Politala yang sudah terdaftar.</span>
+          <span>{{ __('Pilih jenis akun sesuai role Anda. Mahasiswa memakai email') }} <code>&#64;{{ \App\Models\User::domainEmail('mahasiswa') }}</code>{{ __(', Staff Prodi memakai email') }} <code>&#64;{{ \App\Models\User::domainEmail('staff') }}</code>{{ __('. Login dengan Google hanya untuk email Politala yang sudah terdaftar.') }}</span>
         </div>
 
-        <a href="{{ url('/') }}" class="back-home"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+        <a href="{{ url('/') }}" class="back-home"><i class="fa-solid fa-arrow-left"></i> {{ __('Kembali ke Beranda') }}</a>
       </div>
     </div>
   </div>
 
 <script>
-  // Script halaman login: hanya interaksi tampilan (show/hide password & contoh email).
-  // Proses login dan pembatasan role sepenuhnya ditangani Laravel (AuthController).
   (function () {
     var role = document.getElementById('role');
     var email = document.getElementById('username');

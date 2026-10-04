@@ -7,41 +7,31 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * SARANA & PRASARANA PROGRAM STUDI (REVISI 28-09-2026 tahap 2).
- * Termasuk nama-nama Laboratorium Prodi TI. Dikelola Staff Prodi (Data Master),
- * tampil di Profil > Sarana & Prasarana.
- */
 class SaranaPrasarana extends Model
 {
     use HasFactory;
 
     protected $table = 'sarana_prasarana';
 
-    /** ERD: primary key SARANA_PRASARANA = id_sarana_prasarana. */
     protected $primaryKey = 'id_sarana_prasarana';
 
     public const STATUS_AKTIF = 'aktif';
     public const STATUS_NONAKTIF = 'nonaktif';
 
-    public const JENIS_LAB = 'Laboratorium';
-
-    /** Jenis sarana & prasarana => ikon Font Awesome yang sudah dipakai website. */
-    public const JENIS = [
-        self::JENIS_LAB => 'fa-flask',
-        'Ruang Kuliah' => 'fa-chalkboard',
-        'Ruang Penunjang' => 'fa-door-open',
-        'Fasilitas Pendukung' => 'fa-wifi',
+    public const GEDUNG = [
+        'Gedung Teknik Informatika',
+        'Adriansyah 1',
+        'Adriansyah 2',
     ];
+
+    public const IKON = 'fa-building';
 
     protected $fillable = [
         'staff_prodi_id',
         'nama',
-        'jenis',
-        'lokasi',
+        'gedung',
         'kapasitas',
         'fasilitas',
-        'deskripsi',
         'foto',
         'status',
     ];
@@ -50,7 +40,6 @@ class SaranaPrasarana extends Model
         'kapasitas' => 'integer',
     ];
 
-    /** SARANA_PRASARANA (N) -- DIKELOLA --> STAFF_PRODI (1). */
     public function staffProdi(): BelongsTo
     {
         return $this->belongsTo(StaffProdi::class, 'staff_prodi_id', 'id_staff_prodi');
@@ -61,10 +50,11 @@ class SaranaPrasarana extends Model
         return $query->where('status', self::STATUS_AKTIF);
     }
 
-    /** Laboratorium lebih dulu, lalu nama (ERD tidak memiliki kolom urutan). */
     public function scopeUrut(Builder $query): Builder
     {
-        return $query->orderByRaw('CASE WHEN jenis = ? THEN 0 ELSE 1 END', [self::JENIS_LAB])
+        $kasus = collect(self::GEDUNG)->map(fn ($g, $i) => 'WHEN ? THEN '.($i + 1))->implode(' ');
+
+        return $query->orderByRaw('CASE gedung '.$kasus.' ELSE 99 END', self::GEDUNG)
             ->orderBy('nama');
     }
 
@@ -77,7 +67,7 @@ class SaranaPrasarana extends Model
         $kata = '%'.$kata.'%';
 
         return $query->where(fn (Builder $q) => $q->where('nama', 'like', $kata)
-            ->orWhere('lokasi', 'like', $kata)
+            ->orWhere('gedung', 'like', $kata)
             ->orWhere('fasilitas', 'like', $kata));
     }
 
@@ -88,10 +78,9 @@ class SaranaPrasarana extends Model
 
     public function getIkonAttribute(): string
     {
-        return self::JENIS[$this->jenis] ?? 'fa-building';
+        return self::IKON;
     }
 
-    /** Fasilitas disimpan satu baris satu item. */
     public function getDaftarFasilitasAttribute(): array
     {
         return collect(preg_split('/\r\n|\r|\n/', (string) $this->fasilitas))

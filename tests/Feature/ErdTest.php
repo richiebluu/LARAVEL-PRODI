@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Akreditasi;
 use App\Models\Berita;
 use App\Models\Dosen;
-use App\Models\KegiatanMahasiswa;
+use App\Models\MataKuliah;
 use App\Models\LowonganPekerjaan;
 use App\Models\Mahasiswa;
 use App\Models\Organisasi;
@@ -25,43 +25,36 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-/**
- * Uji kesesuaian database, model, dan relasi dengan ERD terbaru (29-09-2026).
- */
 class ErdTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $seed = true;
 
-    /** Kolom setiap tabel persis sesuai ERD (urutan tidak dipermasalahkan). */
     private const KOLOM_ERD = [
         'users' => ['id_user', 'name', 'email', 'google_id', 'email_verified_at', 'password', 'role', 'remember_token', 'created_at', 'updated_at'],
         'mahasiswa' => ['nim', 'user_id', 'nama', 'foto', 'angkatan', 'kelas', 'email', 'no_hp', 'ipk', 'status_mahasiswa', 'created_at', 'updated_at'],
         'staff_prodi' => ['id_staff_prodi', 'id_user', 'nip', 'nama', 'foto', 'jabatan', 'email', 'no_hp', 'created_at', 'updated_at'],
         'dosen' => ['nuptk', 'nama', 'foto', 'pendidikan_terakhir', 'google_scholar', 'email', 'alamat', 'tanggal_lahir', 'status', 'created_at', 'updated_at'],
-        'program_studi' => ['id_program_studi', 'staff_prodi_id', 'nama_prodi', 'deskripsi', 'visi', 'misi', 'jumlah_alumni', 'jumlah_dosen', 'link_akamawa', 'kode_etik', 'created_at', 'updated_at'],
+        'program_studi' => ['id_program_studi', 'staff_prodi_id', 'nama_prodi', 'deskripsi', 'visi', 'misi', 'jumlah_alumni', 'jumlah_dosen', 'link_akamawa', 'kode_etik', 'link_media_sosial', 'created_at', 'updated_at'],
         'akreditasi' => ['id_akreditasi', 'program_studi_id', 'peringkat', 'nomor_sk', 'tanggal_mulai', 'tanggal_berakhir', 'lembaga', 'dokumen', 'created_at', 'updated_at'],
         'struktur_organisasi' => ['id_struktur_organisasi', 'program_studi_id', 'dosen_id', 'nama', 'jabatan', 'foto', 'created_at', 'updated_at'],
         'organisasi' => ['id_organisasi', 'nim', 'nama_organisasi', 'jabatan', 'created_at', 'updated_at'],
         'prestasi' => ['id_prestasi', 'nim', 'staff_prodi_id', 'judul', 'kategori', 'tingkat', 'penyelenggara', 'tanggal', 'dokumen', 'deskripsi', 'status', 'catatan', 'created_at', 'updated_at'],
-        // REVISI DOSEN 01-10-2026: + dasar_pembobotan (alasan bobot AHP).
         'ranking_bobot' => ['id_ranking_bobot', 'kode', 'kriteria', 'bobot', 'tipe_bobot', 'dasar_pembobotan', 'created_at', 'updated_at'],
         'ranking' => ['id_ranking', 'nim', 'ranking_bobot_id', 'nilai_ipk', 'poin_prestasi_akademik', 'poin_prestasi_nonakademik', 'poin_keaktifan_organisasi',
             'normalisasi_nilai_ipk', 'normalisasi_prestasi_akademik', 'normalisasi_prestasi_nonakademik', 'normalisasi_keaktifan_organisasi',
             'peringkat', 'nilai_akhir', 'tahun', 'created_at', 'updated_at'],
-        // REVISI DOSEN 01-10-2026: satu pengumuman -> banyak penerima.
         'pengumuman_penerima' => ['id_pengumuman_penerima', 'pengumuman_id', 'nim', 'dibaca_pada', 'created_at', 'updated_at'],
         'pengumuman' => ['id_pengumuman', 'prestasi_id', 'kategori', 'staff_prodi_id', 'nim', 'judul', 'isi', 'status', 'tanggal_dikirim', 'notifikasi', 'dibaca_pada', 'created_at', 'updated_at'],
-        'prospek_lulusan' => ['id_prospek_lulusan', 'staff_prodi_id', 'nama', 'kategori', 'deskripsi', 'ikon', 'status', 'created_at', 'updated_at'],
+        'prospek_lulusan' => ['id_prospek_lulusan', 'staff_prodi_id', 'nama', 'deskripsi', 'ikon', 'status', 'created_at', 'updated_at'],
         'testimoni' => ['id_testimoni', 'staff_prodi_id', 'nama', 'tahun_kelulusan', 'nama_perusahaan', 'jabatan', 'foto', 'isi', 'created_at', 'updated_at'],
-        'kegiatan_mahasiswa' => ['id_kegiatan_mahasiswa', 'staff_prodi_id', 'judul', 'kategori', 'tanggal', 'lokasi', 'penyelenggara', 'deskripsi', 'foto', 'status', 'created_at', 'updated_at'],
-        'berita' => ['id_berita', 'staff_prodi_id', 'judul', 'slug', 'ringkasan', 'kategori', 'isi', 'gambar', 'tanggal', 'status', 'created_at', 'updated_at'],
-        'lowongan_pekerjaan' => ['id_lowongan_pekerjaan', 'staff_prodi_id', 'posisi', 'perusahaan', 'lokasi', 'tipe', 'deskripsi', 'link', 'batas_lamaran', 'status', 'created_at', 'updated_at'],
-        'sarana_prasarana' => ['id_sarana_prasarana', 'staff_prodi_id', 'nama', 'jenis', 'lokasi', 'kapasitas', 'fasilitas', 'deskripsi', 'foto', 'status', 'created_at', 'updated_at'],
+        'berita' => ['id_berita', 'staff_prodi_id', 'judul', 'slug', 'jenis', 'ringkasan', 'kategori', 'lokasi', 'penyelenggara', 'isi', 'gambar', 'link_media_sosial', 'tanggal', 'status', 'created_at', 'updated_at'],
+        'lowongan_pekerjaan' => ['id_lowongan_pekerjaan', 'staff_prodi_id', 'posisi', 'perusahaan', 'lokasi', 'tipe', 'deskripsi', 'link', 'batas_lamaran', 'created_at', 'updated_at'],
+        'sarana_prasarana' => ['id_sarana_prasarana', 'staff_prodi_id', 'nama', 'gedung', 'kapasitas', 'fasilitas', 'foto', 'status', 'created_at', 'updated_at'],
+        'mata_kuliah' => ['kode_mata_kuliah', 'program_studi_id', 'nama', 'semester', 'sks', 'jenis', 'created_at', 'updated_at'],
     ];
 
-    /** FK ERD: tabel.kolom => tabel_induk.kolom_induk. */
     private const FK_ERD = [
         'mahasiswa.user_id' => 'users.id_user',
         'staff_prodi.id_user' => 'users.id_user',
@@ -81,10 +74,10 @@ class ErdTest extends TestCase
         'pengumuman_penerima.nim' => 'mahasiswa.nim',
         'prospek_lulusan.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'testimoni.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
-        'kegiatan_mahasiswa.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'berita.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'lowongan_pekerjaan.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
         'sarana_prasarana.staff_prodi_id' => 'staff_prodi.id_staff_prodi',
+        'mata_kuliah.program_studi_id' => 'program_studi.id_program_studi',
     ];
 
     public function test_kolom_setiap_tabel_sesuai_erd(): void
@@ -98,7 +91,7 @@ class ErdTest extends TestCase
             $this->assertSame($harap, $ada, 'kolom tabel '.$tabel);
         }
 
-        foreach (['pengajuan_perubahan', 'notifikasi', 'verifikasi', 'publikasi', 'profil_lulusan'] as $lama) {
+        foreach (['pengajuan_perubahan', 'notifikasi', 'verifikasi', 'publikasi', 'profil_lulusan', 'kegiatan_mahasiswa', 'password_reset_tokens', 'job_batches'] as $lama) {
             $this->assertFalse(Schema::hasTable($lama), 'tabel di luar ERD: '.$lama);
         }
     }
@@ -110,7 +103,7 @@ class ErdTest extends TestCase
             ProgramStudi::class => 'id_program_studi', Akreditasi::class => 'id_akreditasi', StrukturOrganisasi::class => 'id_struktur_organisasi',
             Organisasi::class => 'id_organisasi', Prestasi::class => 'id_prestasi', RankingBobot::class => 'id_ranking_bobot',
             Ranking::class => 'id_ranking', Pengumuman::class => 'id_pengumuman', ProspekLulusan::class => 'id_prospek_lulusan',
-            Testimoni::class => 'id_testimoni', KegiatanMahasiswa::class => 'id_kegiatan_mahasiswa', Berita::class => 'id_berita',
+            Testimoni::class => 'id_testimoni', MataKuliah::class => 'kode_mata_kuliah', Berita::class => 'id_berita',
             LowonganPekerjaan::class => 'id_lowongan_pekerjaan', SaranaPrasarana::class => 'id_sarana_prasarana',
         ];
         foreach ($pk as $model => $kunci) {
@@ -135,11 +128,9 @@ class ErdTest extends TestCase
         $staff = StaffProdi::firstOrFail();
         $m = Mahasiswa::berprestasi()->firstOrFail();
 
-        // USERS 1-1 MAHASISWA, USERS 1-1 STAFF_PRODI
         $this->assertTrue($m->user->mahasiswa->is($m));
         $this->assertTrue($staff->user->staffProdi->is($staff));
 
-        // MAHASISWA 1-N PRESTASI / ORGANISASI / RANKING, STAFF 1-N MEMVERIFIKASI PRESTASI
         $p = $m->prestasi()->firstOrFail();
         $this->assertTrue($p->mahasiswa->is($m));
         $this->assertTrue($p->staffProdi->is($staff), 'prestasi disetujui memiliki verifikator');
@@ -147,13 +138,11 @@ class ErdTest extends TestCase
         $r = $m->ranking()->firstOrFail();
         $this->assertTrue($r->mahasiswa->is($m));
 
-        // RANKING N-1 RANKING_BOBOT
         $this->assertNotNull($r->rankingBobot);
         $this->assertTrue($r->rankingBobot->ranking->contains($r));
         $this->assertSame(['C1', 'C2', 'C3', 'C4'], RankingBobot::orderBy('kode')->pluck('kode')->all());
         $this->assertSame('benefit', RankingBobot::value('tipe_bobot'));
 
-        // PROGRAM_STUDI -> AKREDITASI, STRUKTUR_ORGANISASI -> DOSEN
         $prodi = ProgramStudi::create(['nama_prodi' => 'Teknologi Informasi', 'staff_prodi_id' => $staff->id_staff_prodi]);
         $akr = Akreditasi::create(['program_studi_id' => $prodi->id_program_studi, 'peringkat' => 'Baik Sekali']);
         $dosen = Dosen::create(['nuptk' => '9988', 'nama' => 'Dr. Uji', 'status' => 'aktif']);
@@ -165,7 +154,6 @@ class ErdTest extends TestCase
         $this->assertTrue($dosen->strukturOrganisasi->contains($so));
         $this->assertTrue($prodi->strukturOrganisasi->contains($so));
 
-        // PENGUMUMAN: MEMBUAT (staff), MENERIMA (mahasiswa), MENDAPAT (prestasi)
         $g = Pengumuman::create(['staff_prodi_id' => $staff->id_staff_prodi, 'nim' => $m->nim, 'prestasi_id' => $p->id_prestasi,
             'kategori' => $p->kategori, 'judul' => 'Uji', 'isi' => 'Isi', 'status' => 'terkirim']);
         $this->assertTrue($g->staffProdi->is($staff));
@@ -190,11 +178,9 @@ class ErdTest extends TestCase
         $this->actingAs($staff)->put('/staff-prestasi/'.$p->id_prestasi.'/verifikasi', ['status' => 'disetujui'])->assertSessionHasNoErrors();
         $this->assertSame($staff->staffProdi->id_staff_prodi, $p->fresh()->staff_prodi_id);
 
-        // Notifikasi = baris PENGUMUMAN milik mahasiswa (kolom notifikasi), tidak tampil di daftar pengumuman.
         $this->actingAs($m->user);
-        $this->get('/mahasiswa-notifikasi')->assertOk()->assertSee('Prestasi disetujui')->assertSee('Prestasi sedang diverifikasi');
-        $this->get('/mahasiswa-pengumuman')->assertOk()->assertDontSee('Prestasi disetujui');
-        $this->post('/mahasiswa-notifikasi/baca')->assertRedirect('/mahasiswa-notifikasi');
+        $this->get('/mahasiswa-notifikasi')->assertRedirect('/mahasiswa-pengumuman');
+        $this->get('/mahasiswa-pengumuman')->assertOk()->assertSee('Prestasi disetujui')->assertSee('Prestasi sedang diverifikasi');
         $this->assertSame(0, Pengumuman::notifikasiUntuk($m->nim)->whereNull('dibaca_pada')->count());
         $this->actingAs($staff)->get('/staff-pengumuman')->assertOk()->assertDontSee('Prestasi disetujui');
     }
@@ -231,15 +217,16 @@ class ErdTest extends TestCase
         $dosen = Dosen::create(['nuptk' => '1234567890', 'nama' => 'Dr. Dosen Uji', 'status' => 'aktif', 'email' => 'dosen@politala.ac.id']);
         StrukturOrganisasi::create(['program_studi_id' => $prodi->id_program_studi, 'dosen_id' => $dosen->nuptk, 'jabatan' => 'Koordinator Program Studi']);
         StrukturOrganisasi::create(['program_studi_id' => $prodi->id_program_studi, 'nama' => 'Sylvi', 'jabatan' => 'Staff Prodi']);
-        ProspekLulusan::create(['staff_prodi_id' => $sid, 'nama' => 'Web Developer', 'kategori' => 'Software', 'ikon' => 'fa-code', 'status' => 'aktif']);
+        ProspekLulusan::create(['staff_prodi_id' => $sid, 'nama' => 'Web Developer', 'ikon' => 'fa-code', 'status' => 'aktif']);
         Testimoni::create(['staff_prodi_id' => $sid, 'nama' => 'Alumni Uji', 'isi' => 'Mantap']);
-        KegiatanMahasiswa::create(['staff_prodi_id' => $sid, 'judul' => 'Seminar Uji', 'kategori' => 'Lainnya', 'tanggal' => '2026-09-01', 'status' => 'aktif']);
+        MataKuliah::create(['kode_mata_kuliah' => 'TI101', 'program_studi_id' => $prodi->id_program_studi, 'nama' => 'Algoritma', 'semester' => 1, 'sks' => 3, 'jenis' => 'Wajib']);
         Berita::create(['staff_prodi_id' => $sid, 'judul' => 'Berita Uji', 'slug' => 'berita-uji', 'isi' => 'Isi', 'tanggal' => '2026-09-01', 'status' => 'terbit']);
-        LowonganPekerjaan::create(['staff_prodi_id' => $sid, 'posisi' => 'Programmer', 'perusahaan' => 'PT Uji', 'link' => 'https://contoh.id', 'status' => 'aktif']);
-        SaranaPrasarana::create(['staff_prodi_id' => $sid, 'nama' => 'Lab Uji', 'jenis' => 'Laboratorium', 'status' => 'aktif']);
+        Berita::create(['staff_prodi_id' => $sid, 'judul' => 'Kegiatan Uji', 'slug' => 'kegiatan-uji', 'jenis' => Berita::JENIS_KEGIATAN, 'lokasi' => 'Aula', 'isi' => 'Isi', 'tanggal' => '2026-09-02', 'status' => 'terbit']);
+        LowonganPekerjaan::create(['staff_prodi_id' => $sid, 'posisi' => 'Programmer', 'perusahaan' => 'PT Uji', 'link' => 'https://contoh.id']);
+        SaranaPrasarana::create(['staff_prodi_id' => $sid, 'nama' => 'Lab Uji', 'gedung' => 'Adriansyah 1', 'status' => 'aktif']);
 
-        foreach (['/', '/profil', '/prospek-lulusan', '/akreditasi', '/struktur-organisasi', '/dosen', '/kurikulum', '/sarana-prasarana',
-            '/mahasiswa-berprestasi', '/ranking', '/kegiatan-mahasiswa', '/testimoni', '/lowongan-pekerjaan', '/berita', '/berita/berita-uji',
+        foreach (['/', '/profil', '/prospek-lulusan', '/akreditasi', '/struktur-organisasi', '/dosen', '/mata-kuliah', '/sarana-prasarana',
+            '/mahasiswa-berprestasi', '/ranking', '/berita?jenis=kegiatan-mahasiswa', '/testimoni', '/lowongan-pekerjaan', '/berita', '/berita/berita-uji', '/berita/kegiatan-uji',
             '/akamawa', '/kode-etik', '/pengumuman'] as $url) {
             $this->get($url)->assertOk();
         }
@@ -248,14 +235,13 @@ class ErdTest extends TestCase
 
         $this->actingAs($staff);
         foreach (['/staff-dashboard', '/staff-mahasiswa', '/staff-dosen', '/staff-prestasi', '/staff-ranking', '/staff-pengumuman',
-            '/staff-profil', '/staff-profile', '/staff-akreditasi', '/staff-struktur-organisasi', '/staff-prospek-lulusan', '/staff-kurikulum',
-            '/staff-sarana-prasarana', '/staff-kegiatan-mahasiswa', '/staff-testimoni', '/staff-berita', '/staff-lowongan'] as $url) {
+            '/staff-profil', '/staff-profile', '/staff-akreditasi', '/staff-struktur-organisasi', '/staff-prospek-lulusan', '/staff-mata-kuliah',
+            '/staff-sarana-prasarana', '/staff-berita?jenis=kegiatan_mahasiswa', '/staff-testimoni', '/staff-berita', '/staff-lowongan'] as $url) {
             $this->get($url)->assertOk();
         }
         $this->get('/staff-berita')->assertSee(route('staff-berita.update', ['berita' => Berita::first()->id_berita]), false);
         $this->get('/staff-struktur-organisasi')->assertSee('value="1234567890"', false);
 
-        // Urutan struktur organisasi mengikuti hierarki jabatan (tanpa kolom urutan).
         $this->assertSame('Koordinator Program Studi', StrukturOrganisasi::urut()->value('jabatan'));
         $this->assertSame(0, DB::table('pengumuman')->whereNull('nim')->count());
     }

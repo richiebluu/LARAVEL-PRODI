@@ -7,15 +7,18 @@ use Illuminate\Http\Request;
 
 class BeritaController extends Controller
 {
-    /** Daftar Berita Program Studi (hanya berstatus terbit). */
     public function index(Request $request)
     {
         $cari = trim((string) $request->query('q'));
+        $slugJenis = (string) $request->query('jenis');
+        $jenis = Berita::SLUG_JENIS[$slugJenis] ?? null;
 
         $berita = Berita::terbit()
+            ->jenis($jenis)
             ->when($cari !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->where('judul', 'like', '%'.$cari.'%')
-                ->orWhere('kategori', 'like', '%'.$cari.'%')))
+                ->orWhere('kategori', 'like', '%'.$cari.'%')
+                ->orWhere('lokasi', 'like', '%'.$cari.'%')))
             ->orderByDesc('tanggal')
             ->orderByDesc('id_berita')
             ->paginate(9)
@@ -24,10 +27,10 @@ class BeritaController extends Controller
         return view('berita', [
             'daftarBerita' => $berita,
             'cari' => $cari,
+            'jenis' => $jenis ? $slugJenis : null,
         ]);
     }
 
-    /** Detail berita (/berita/{slug}). Draft tidak dapat dibuka publik. */
     public function show(Berita $berita)
     {
         abort_unless($berita->status === Berita::STATUS_TERBIT, 404);

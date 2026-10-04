@@ -12,9 +12,11 @@
 <body data-page="staff-profil">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -54,7 +56,6 @@
               <textarea name="visi" rows="3">{{ old('visi', $prodi?->visi) }}</textarea></div>
             <div class="form-group full"><label>Misi (satu baris satu poin)</label>
               <textarea name="misi" rows="4">{{ old('misi', $prodi?->misi) }}</textarea></div>
-            {{-- REVISI 28-09-2026: Prospek Lulusan dikelola di halaman tersendiri. --}}
             <div class="form-group full"><div class="form-hint"><i class="fa-solid fa-circle-info"></i> Prospek Lulusan sekarang dikelola di menu <a href="{{ route('staff-prospek-lulusan') }}" style="color:var(--blue-600); font-weight:600;">Prospek Lulusan</a>.</div></div>
             <div class="form-group"><label>Jumlah Alumni</label>
               <input type="number" min="0" name="jumlah_alumni" value="{{ old('jumlah_alumni', $prodi?->jumlah_alumni ?? 0) }}">
@@ -63,7 +64,6 @@
               <input type="number" min="0" name="jumlah_dosen" value="{{ old('jumlah_dosen', $prodi?->jumlah_dosen ?? 0) }}">
               <div class="form-hint">Angka DOSEN pada halaman publik tetap dihitung dari tabel dosen.</div></div>
 
-            {{-- REVISI 27-09-2026: "Layanan" menjadi "Informasi" (AKAMAWA + Kode Etik Mahasiswa). --}}
             <div class="form-group full"><h3 style="margin:10px 0 0 0; font-size:1rem;">Informasi</h3>
               <div class="form-hint">Ditampilkan pada menu Informasi (AKAMAWA dan Kode Etik Mahasiswa) di website publik.</div></div>
             <div class="form-group"><label>Link AKAMAWA</label>
@@ -79,6 +79,21 @@
                   <option value="1">Ya, hapus PDF saat ini</option>
                 </select></div>
             @endif
+
+            <div class="form-group full"><h3 style="margin:10px 0 0 0; font-size:1rem;">Media Sosial</h3>
+              <div class="form-hint">Ditampilkan sebagai ikon yang dapat diklik pada footer dan bagian Media Sosial di Beranda. Jenis media sosial (Instagram, Facebook, TikTok, YouTube, dll.) dikenali otomatis dari link.</div></div>
+            <div class="form-group full"><label>Link Media Sosial</label>
+              @php $daftarLink = old('link_media_sosial', $prodi?->link_media_sosial_list ?: ['']); @endphp
+              <div data-baris-dinamis>
+                @foreach (array_values($daftarLink ?: ['']) as $i => $url)
+                  @include('partials.baris-media-sosial', ['i' => $i, 'url' => $url])
+                @endforeach
+                <template data-baris-template>
+                  @include('partials.baris-media-sosial', ['i' => '__i__', 'url' => ''])
+                </template>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" data-tambah-baris style="margin-top:4px;"><i class="fa-solid fa-plus"></i> Tambah Link</button>
+              <div class="form-hint">Gunakan URL lengkap, contoh: https://instagram.com/namaprodi, https://facebook.com/namaprodi, https://tiktok.com/@namaprodi, https://youtube.com/@namaprodi.</div></div>
           </div>
           <div style="margin-top:20px;">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Profil Prodi</button>
@@ -90,7 +105,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

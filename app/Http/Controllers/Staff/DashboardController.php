@@ -22,11 +22,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * "Aktivitas Terbaru" disusun dari data yang memang ada di database
-     * (prestasi, riwayat perubahan data, pengumuman, berita).
-     * Tidak ada tabel aktivitas baru dan tidak ada data dummy.
-     */
     private function aktivitasTerbaru(int $limit = 6): Collection
     {
         $item = collect();
@@ -40,7 +35,6 @@ class DashboardController extends Controller
                 ]);
             });
 
-        // ERD: tabel riwayat pengajuan_perubahan dihapus; aktivitas organisasi diambil dari tabel organisasi.
         Organisasi::with('mahasiswa')->latest('updated_at')->take($limit * 2)->get()->unique('nim')
             ->each(function (Organisasi $o) use ($item) {
                 $item->push([

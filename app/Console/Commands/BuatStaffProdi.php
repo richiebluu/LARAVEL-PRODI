@@ -8,12 +8,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-/**
- * Membuat akun Staff Prodi baru secara interaktif.
- *
- *   php artisan staff:buat
- *   php artisan staff:buat --email=a@b.c --nama="Nama" --nip=123 --password=rahasia123
- */
 class BuatStaffProdi extends Command
 {
     protected $signature = 'staff:buat
@@ -35,7 +29,6 @@ class BuatStaffProdi extends Command
             compact('nama', 'email', 'nip', 'password'),
             [
                 'nama' => ['required', 'string', 'max:150'],
-                // Email Staff Prodi wajib email institusi (login dibatasi sesuai role).
                 'email' => ['required', 'email', 'max:150', 'unique:users,email', User::aturanDomainEmail('staff')],
                 'nip' => ['required', 'string', 'max:30', 'unique:staff_prodi,nip'],
                 'password' => ['required', 'string', 'min:8'],

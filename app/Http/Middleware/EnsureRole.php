@@ -7,10 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Membatasi akses dashboard berdasarkan role user.
- * Dipakai sebagai: ->middleware('role:staff')
- */
 class EnsureRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response

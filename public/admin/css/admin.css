@@ -1,7 +1,4 @@
-/* ==========================================================================
-   ADMIN DASHBOARD — PROGRAM STUDI TEKNOLOGI INFORMASI
-   Identitas visual sama dengan website publik (navy/biru/cyan/putih).
-   ========================================================================== */
+/* Admin Dashboard */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 :root{
@@ -21,7 +18,7 @@ a{text-decoration:none; color:inherit;}
 img{max-width:100%; display:block;}
 button{font-family:var(--font-body); cursor:pointer;}
 
-/* ---------- LAYOUT ---------- */
+/* Layout */
 .admin-shell{display:flex; min-height:100vh;}
 
 .sidebar{
@@ -64,21 +61,21 @@ button{font-family:var(--font-body); cursor:pointer;}
 
 .content{padding:32px 34px 60px 34px;}
 
-/* ---------- STAT CARDS ---------- */
+/* Stat Cards */
 .astats-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-bottom:34px;}
 .astat-card{background:#fff; border-radius:var(--radius-md); padding:22px; box-shadow:var(--shadow-sm); border:1px solid var(--grey-100); display:flex; flex-direction:column; gap:10px;}
 .astat-icon{width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.05rem; background:rgba(23,105,170,.1); color:var(--blue-600);}
 .astat-num{font-family:var(--font-display); font-size:1.7rem; font-weight:800; color:var(--navy-900);}
 .astat-label{font-size:.78rem; color:var(--grey-500); font-weight:500;}
 
-/* ---------- SECTION / CARD ---------- */
+/* Section / Card */
 .panel{background:#fff; border-radius:var(--radius-md); border:1px solid var(--grey-100); box-shadow:var(--shadow-sm); padding:28px;}
 .panel + .panel{margin-top:26px;}
 .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;}
 .panel-head h2{font-size:1.1rem; margin:0;}
 .two-col{display:grid; grid-template-columns:1.4fr 1fr; gap:26px; align-items:start;}
 
-/* ---------- QUICK ACTION ---------- */
+/* Quick Action */
 .qa-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
 .qa-btn{
   display:flex; align-items:center; gap:14px; padding:18px 18px; border-radius:14px; border:1.5px dashed var(--grey-300);
@@ -87,7 +84,7 @@ button{font-family:var(--font-body); cursor:pointer;}
 .qa-btn:hover{border-color:var(--blue-600); background:rgba(23,105,170,.05); transform:translateY(-3px);}
 .qa-icon{width:40px; height:40px; border-radius:10px; background:var(--grad-primary); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
 
-/* ---------- ACTIVITY LIST ---------- */
+/* Activity List */
 .activity-list{display:flex; flex-direction:column; gap:4px;}
 .activity-item{display:flex; gap:14px; padding:14px 4px; border-bottom:1px solid var(--grey-100);}
 .activity-item:last-child{border-bottom:none;}
@@ -95,7 +92,7 @@ button{font-family:var(--font-body); cursor:pointer;}
 .activity-text{font-size:.86rem; color:var(--grey-700);}
 .activity-time{font-size:.75rem; color:var(--grey-500); margin-top:2px;}
 
-/* ---------- BUTTONS ---------- */
+/* Buttons */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 20px; border-radius:10px; font-weight:600; font-size:.85rem; border:none; transition:all .2s ease;}
 .btn-primary{background:var(--grad-primary); color:#fff; box-shadow:var(--shadow-sm);}
 .btn-primary:hover{transform:translateY(-2px); box-shadow:var(--shadow-md);}
@@ -106,7 +103,7 @@ button{font-family:var(--font-body); cursor:pointer;}
 .btn-sm{padding:7px 14px; font-size:.78rem; border-radius:8px;}
 .btn-icon{width:34px; height:34px; padding:0; border-radius:8px;}
 
-/* ---------- TABLE ---------- */
+/* Table */
 .table-wrap{overflow-x:auto;}
 table.data-table{width:100%; border-collapse:collapse; font-size:.87rem;}
 table.data-table th{text-align:left; padding:12px 16px; background:var(--grey-50); color:var(--grey-500); font-weight:600; font-size:.75rem; letter-spacing:.03em; text-transform:uppercase; white-space:nowrap;}
@@ -124,13 +121,13 @@ table.data-table td.actions{display:flex; gap:8px; white-space:nowrap;}
 .badge-red{background:#FEE2E2; color:#DC2626;}
 .badge-note{display:block; font-size:.7rem; color:#DC2626; margin-top:4px; font-weight:500;}
 
-/* ---------- TOOLBAR ---------- */
+/* Toolbar */
 .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;}
 .toolbar .search-mini{position:relative;}
 .toolbar .search-mini input{padding:10px 14px 10px 38px; border-radius:10px; border:1.5px solid var(--grey-300); font-size:.85rem; width:240px;}
 .toolbar .search-mini i{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--grey-500); font-size:.8rem;}
 
-/* ---------- MODAL ---------- */
+/* Modal */
 .modal-overlay{position:fixed; inset:0; background:rgba(6,43,96,.55); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:all .25s ease; padding:20px;}
 .modal-overlay.show{opacity:1; visibility:visible;}
 .modal-box{background:#fff; border-radius:var(--radius-lg); width:100%; max-width:620px; max-height:88vh; overflow-y:auto; transform:scale(.94); transition:transform .25s ease; position:relative;}
@@ -144,7 +141,7 @@ table.data-table td.actions{display:flex; gap:8px; white-space:nowrap;}
 .confirm-box{max-width:400px; text-align:center; padding:34px 30px;}
 .confirm-icon{width:60px; height:60px; border-radius:50%; background:#FEE2E2; color:#DC2626; display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin:0 auto 18px auto;}
 
-/* ---------- FORM ---------- */
+/* Form */
 .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
 .form-group{margin-bottom:0;}
 .form-group.full{grid-column:1 / -1;}
@@ -156,11 +153,11 @@ table.data-table td.actions{display:flex; gap:8px; white-space:nowrap;}
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:var(--blue-600);}
 .form-hint{font-size:.75rem; color:var(--grey-500); margin-top:5px;}
 
-/* ---------- EMPTY STATE ---------- */
+/* Empty State */
 .empty-state{text-align:center; padding:50px 20px; color:var(--grey-500);}
 .empty-state i{font-size:2rem; color:var(--grey-300); margin-bottom:14px;}
 
-/* ---------- RESPONSIVE ---------- */
+/* Responsive */
 @media(max-width:1200px){ .astats-grid{grid-template-columns:repeat(3,1fr);} .qa-grid{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} }
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%);}
@@ -175,7 +172,22 @@ table.data-table td.actions{display:flex; gap:8px; white-space:nowrap;}
   .topbar{padding:14px 18px;}
 }
 
-/* REVISI 24-09-2026: logo resmi Prodi TI pada sidebar (ukuran badge tetap 42px). */
-/* Sidebar berlatar navy -> logo transparan ditampilkan putih. */
 .sidebar-brand .brand-badge.brand-logo{background:transparent; padding:0; border-radius:0;}
 .sidebar-brand .brand-badge.brand-logo img{width:100%; height:100%; object-fit:contain; display:block; filter:brightness(0) invert(1);}
+
+.sidebar{transition:transform .3s ease, width .25s ease;}
+.main-area{transition:margin-left .25s ease;}
+@media(min-width:901px){
+  body.sidebar-bisa-susut .sidebar-toggle{display:inline-flex; align-items:center; justify-content:center;}
+  body.sidebar-mini{--sidebar-w:84px;}
+  body.sidebar-mini .sidebar-brand{justify-content:center; padding:26px 0;}
+  body.sidebar-mini .sidebar-brand .sidebar-brand-text{display:none;}
+  body.sidebar-mini .sidebar-menu{padding:18px 12px; overflow-x:hidden;}
+  body.sidebar-mini .sidebar-menu .menu-label{font-size:0; padding:0; height:1px; margin:12px 10px; background:rgba(255,255,255,.12);}
+  body.sidebar-mini .sidebar-menu .menu-label:first-child{display:none;}
+  body.sidebar-mini .side-link{justify-content:center; gap:0; padding:12px 0;}
+  body.sidebar-mini .side-link .side-text{display:none;}
+  body.sidebar-mini .side-link i{width:auto; font-size:1.05rem;}
+  body.sidebar-mini .sidebar-footer{padding:16px 12px 22px 12px;}
+}
+@media(prefers-reduced-motion:reduce){ .sidebar, .main-area{transition:none;} }

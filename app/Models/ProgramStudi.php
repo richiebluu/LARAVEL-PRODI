@@ -13,7 +13,6 @@ class ProgramStudi extends Model
 
     protected $table = 'program_studi';
 
-    /** ERD: primary key PROGRAM_STUDI = id_program_studi. */
     protected $primaryKey = 'id_program_studi';
 
     protected $fillable = [
@@ -24,13 +23,11 @@ class ProgramStudi extends Model
         'misi',
         'jumlah_alumni',
         'jumlah_dosen',
-        // Menu Informasi: AKAMAWA + PDF Kode Etik Mahasiswa sebagai atribut Profil Prodi.
-        // REVISI 27-09-2026: link tutorial AKAMAWA dihapus ("AKAMAWA / Tutorial" -> "AKAMAWA").
         'link_akamawa',
         'kode_etik',
+        'link_media_sosial',
     ];
 
-    /** Alamat bawaan layanan AKAMAWA Politala bila Staff Prodi belum mengisi link. */
     public const LINK_AKAMAWA_BAWAAN = 'https://akamawa.politala.ac.id/';
 
     protected $casts = [
@@ -38,49 +35,113 @@ class ProgramStudi extends Model
         'jumlah_dosen' => 'integer',
     ];
 
-    /** ERD: PROGRAM_STUDI (1) -- MEMILIKI --> STRUKTUR_ORGANISASI (N). */
+    public const PLATFORM_MEDIA_SOSIAL = [
+        'instagram.com' => ['label' => 'Instagram', 'ikon' => 'fa-brands fa-instagram'],
+        'facebook.com' => ['label' => 'Facebook', 'ikon' => 'fa-brands fa-facebook-f'],
+        'fb.com' => ['label' => 'Facebook', 'ikon' => 'fa-brands fa-facebook-f'],
+        'tiktok.com' => ['label' => 'TikTok', 'ikon' => 'fa-brands fa-tiktok'],
+        'youtube.com' => ['label' => 'YouTube', 'ikon' => 'fa-brands fa-youtube'],
+        'youtu.be' => ['label' => 'YouTube', 'ikon' => 'fa-brands fa-youtube'],
+        'x.com' => ['label' => 'X', 'ikon' => 'fa-brands fa-x-twitter'],
+        'twitter.com' => ['label' => 'X', 'ikon' => 'fa-brands fa-x-twitter'],
+        'linkedin.com' => ['label' => 'LinkedIn', 'ikon' => 'fa-brands fa-linkedin-in'],
+        'wa.me' => ['label' => 'WhatsApp', 'ikon' => 'fa-brands fa-whatsapp'],
+        'whatsapp.com' => ['label' => 'WhatsApp', 'ikon' => 'fa-brands fa-whatsapp'],
+        't.me' => ['label' => 'Telegram', 'ikon' => 'fa-brands fa-telegram'],
+        'threads.net' => ['label' => 'Threads', 'ikon' => 'fa-brands fa-threads'],
+        'threads.com' => ['label' => 'Threads', 'ikon' => 'fa-brands fa-threads'],
+    ];
+
+    private const SEGMEN_BUKAN_AKUN = ['channel', 'c', 'user', 'company', 'school', 'in', 'pages', 'groups', 'p', 'reel', 'video', 'watch', 'profile.php'];
+
     public function strukturOrganisasi(): HasMany
     {
         return $this->hasMany(StrukturOrganisasi::class, 'program_studi_id', 'id_program_studi')->urut();
     }
 
-    /** Link AKAMAWA yang dipakai tombol "Kunjungi Website AKAMAWA". */
+    public function mataKuliah(): HasMany
+    {
+        return $this->hasMany(MataKuliah::class, 'program_studi_id', 'id_program_studi');
+    }
+
     public function getUrlAkamawaAttribute(): string
     {
         return $this->link_akamawa ?: self::LINK_AKAMAWA_BAWAAN;
     }
 
-    /** URL PDF Kode Etik (hasil upload Staff Prodi). */
     public function getKodeEtikUrlAttribute(): ?string
     {
         return \App\Support\Berkas::url($this->kode_etik);
     }
 
-    /** ERD: PROGRAM_STUDI (1) -- MEMILIKI --> AKREDITASI (N). */
     public function akreditasi(): HasMany
     {
         return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi');
     }
 
-    /** Riwayat akreditasi, urut tanggal penetapan terbaru (lihat Akreditasi::scopeTerbaru). */
     public function akreditasiTerbaru(): HasMany
     {
         return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi')->terbaru();
     }
 
-    /** Akreditasi yang sedang berlaku (status Terakreditasi), terbaru lebih dulu. */
     public function akreditasiBerlaku(): HasMany
     {
         return $this->hasMany(Akreditasi::class, 'program_studi_id', 'id_program_studi')->terakreditasi()->terbaru();
     }
 
-    /** ERD: STAFF_PRODI (1) -- MENGELOLA --> PROGRAM_STUDI (1). */
     public function staffProdi(): BelongsTo
     {
         return $this->belongsTo(StaffProdi::class, 'staff_prodi_id', 'id_staff_prodi');
     }
 
-    /** Misi disimpan satu baris satu poin. */
+    public function getLinkMediaSosialListAttribute(): array
+    {
+        return $this->pecahBaris($this->link_media_sosial);
+    }
+
+    public function getMediaSosialAttribute(): array
+    {
+        return collect($this->link_media_sosial_list)
+            ->map(fn (string $url) => self::uraikanMediaSosial($url))
+            ->all();
+    }
+
+    public static function mediaSosialWebsite(): array
+    {
+        $dariDatabase = static::query()->value('link_media_sosial');
+
+        if (filled($dariDatabase)) {
+            return (new static(['link_media_sosial' => $dariDatabase]))->media_sosial;
+        }
+
+        return array_values(config('prodi.sosial_media', []));
+    }
+
+    public static function uraikanMediaSosial(string $url): array
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $host = preg_replace('/^(www\.|m\.|web\.|vm\.|vt\.)/', '', $host);
+
+        $platform = ['label' => 'Media Sosial', 'ikon' => 'fa-solid fa-globe'];
+        foreach (self::PLATFORM_MEDIA_SOSIAL as $domain => $data) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+                $platform = $data;
+                break;
+            }
+        }
+
+        $segmen = collect(explode('/', trim((string) parse_url($url, PHP_URL_PATH), '/')))
+            ->filter(fn ($s) => $s !== '' && ! in_array(strtolower($s), self::SEGMEN_BUKAN_AKUN, true))
+            ->first();
+
+        return [
+            'url' => $url,
+            'label' => $platform['label'],
+            'ikon' => $platform['ikon'],
+            'nama_akun' => $segmen ? '@'.ltrim(urldecode($segmen), '@') : ($host ?: $url),
+        ];
+    }
+
     public function getMisiListAttribute(): array
     {
         return $this->pecahBaris($this->misi);

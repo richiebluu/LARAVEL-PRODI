@@ -9,29 +9,8 @@ use App\Models\RankingBobot;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Perhitungan ranking mahasiswa berprestasi dengan metode SAW
- * (Simple Additive Weighting).
- *
- * Acuan: "DATA DUMMY MAHASISWA_METODE SAW_KELOMPOK-3.xlsx"
- * (sheet Bobot Kriteria, Skema Skor, Data & Perhitungan SAW, Ranking Final).
- *
- * Langkah SAW:
- *  1. Nilai kriteria tiap mahasiswa (dari database):
- *       C1 Nilai Akademik        = IPK (tabel mahasiswa)
- *       C2 Prestasi Akademik     = poin prestasi akademik disetujui
- *       C3 Prestasi Non-Akademik = poin prestasi non-akademik disetujui
- *       C4 Keaktifan Organisasi  = poin jabatan organisasi (tabel organisasi)
- *  2. Bobot dari tabel ranking_bobot = hasil AHP (C1 .48, C2 .29, C3 .15, C4 .08).
- *     Perhitungan AHP-nya ada di App\Http\Controllers\Staff\RankingController::hitungAHP().
- *  3. Normalisasi benefit: Rij = Xij / max(Xj).
- *  4. Nilai preferensi: Vi = Σ Wj × Rij.
- *  5. Urutkan Vi menurun.
- *  6. Peringkat (nilai sama -> peringkat sama, seperti fungsi RANK Excel).
- */
 class RankingService
 {
-    /** Empat kriteria resmi sistem ranking (urut C1..C4). */
     public const KRITERIA = [
         'Nilai Akademik',
         'Prestasi Akademik',
@@ -39,7 +18,6 @@ class RankingService
         'Keaktifan Organisasi',
     ];
 
-    /** Kode kriteria -> kunci nilai pada baris hasil perhitungan. */
     public const KODE_KE_KOLOM = [
         'C1' => 'c1',
         'C2' => 'c2',
@@ -47,11 +25,6 @@ class RankingService
         'C4' => 'c4',
     ];
 
-    /**
-     * Bobot aktif dari tabel ranking_bobot, di-key dengan kode (C1..C4).
-     * Bobot bersifat tetap; bila barisnya belum ada (database baru),
-     * baris dibuat dari config/saw.php — bukan dari input pengguna.
-     */
     public function bobot(): Collection
     {
         $bobot = RankingBobot::orderBy('kode')->get()->whereNotNull('kode')->keyBy('kode');
@@ -64,11 +37,6 @@ class RankingService
         return $bobot;
     }
 
-    /**
-     * Tulis bobot tetap (config/saw.php = hasil AHP yang dibulatkan) ke tabel ranking_bobot.
-     * Dasar pembobotan bawaan hanya diisi bila masih kosong, sehingga teks yang sudah
-     * disunting Staff Prodi tidak tertimpa.
-     */
     public function sinkronBobot(): void
     {
         foreach (config('saw.kriteria') as $kode => $k) {
@@ -83,15 +51,9 @@ class RankingService
         }
     }
 
-    /**
-     * Simpan bobot hasil AHP ke tabel ranking_bobot (dipanggil RankingController
-     * setelah AHP dihitung dan dinyatakan konsisten).
-     *
-     * @param  array<string, float>  $bobotPerKode  mis. ['C1' => 0.48, 'C2' => 0.29, ...]
-     */
     public function terapkanBobot(array $bobotPerKode): void
     {
-        $this->bobot(); // pastikan keempat baris kriteria sudah ada
+        $this->bobot();
 
         foreach ($bobotPerKode as $kode => $nilai) {
             RankingBobot::where('kode', $kode)->update(['bobot' => $nilai]);
@@ -105,15 +67,6 @@ class RankingService
         return round((float) $bobot->sum(fn ($b) => (float) $b->bobot), 4);
     }
 
-    /* ======================================================================
-     *  LANGKAH 1 — NILAI KRITERIA
-     * ==================================================================== */
-
-    /**
-     * Poin C2/C3 dari kumpulan prestasi (sudah disetujui) satu kategori.
-     * Rumus Excel: MIN(100, skor tingkat + MIN(jumlah tambahan, maks) × bonus).
-     * "Skor tingkat" = tingkat tertinggi, "tambahan" = prestasi selain yang tertinggi.
-     */
     public function skorPrestasi(Collection $prestasi, string $kategori): float
     {
         $cocok = $prestasi->where('kategori', $kategori);
@@ -129,10 +82,6 @@ class RankingService
         return (float) min(config('saw.skor_maksimal'), $dasar + $tambahan * $skema['bonus_per_tambahan']);
     }
 
-    /**
-     * Poin C4 dari organisasi mahasiswa.
-     * Rumus Excel: MIN(100, jabatan tertinggi + ROUND(jabatan tertinggi kedua × 10%)).
-     */
     public function skorOrganisasi(Collection $organisasi): float
     {
         $skor = $organisasi->map(fn ($o) => $o->poin)->sortDesc()->values();
@@ -148,7 +97,6 @@ class RankingService
         return (float) min(config('saw.skor_maksimal'), $pertama + $bonus);
     }
 
-    /** Nilai C1..C4 seorang mahasiswa (relasi prestasiDisetujui & organisasi dipakai bila sudah di-load). */
     public function nilaiKriteria(Mahasiswa $m): array
     {
         $prestasi = $m->relationLoaded('prestasiDisetujui') ? $m->prestasiDisetujui : $m->prestasiDisetujui()->get();
@@ -162,14 +110,6 @@ class RankingService
         ];
     }
 
-    /* ======================================================================
-     *  LANGKAH 2-6 — BOBOT, NORMALISASI, NILAI AKHIR, URUT, PERINGKAT
-     * ==================================================================== */
-
-    /**
-     * Hitung SAW untuk seluruh mahasiswa aktif, langsung dari database.
-     * Hasil: Collection of array, terurut dari nilai akhir tertinggi.
-     */
     public function hitung(?Collection $bobot = null): Collection
     {
         $bobot ??= $this->bobot();
@@ -183,10 +123,8 @@ class RankingService
             return collect();
         }
 
-        // Langkah 1: matriks keputusan X.
         $baris = $mahasiswa->map(fn (Mahasiswa $m) => ['mahasiswa' => $m] + $this->nilaiKriteria($m));
 
-        // Langkah 3: normalisasi benefit, Rij = Xij / max(Xj).
         $maks = [];
         foreach (self::KODE_KE_KOLOM as $kolom) {
             $maks[$kolom] = (float) $baris->max($kolom);
@@ -198,25 +136,19 @@ class RankingService
                 $rij = $maks[$kolom] > 0 ? $r[$kolom] / $maks[$kolom] : 0.0;
                 $r['r'.substr($kolom, 1)] = $rij;
 
-                // Langkah 4: Vi = Σ Wj × Rij (bobot dari tabel ranking_bobot).
                 $vi += (float) ($bobot->get($kode)->bobot ?? 0) * $rij;
             }
-            // Vi murni SAW ada di rentang 0..1; dikali 100 di sini supaya nilai akhir
-            // dan seluruh tampilan (dashboard Staff, halaman publik, tabel ranking)
-            // konsisten memakai skala 1-100, bukan 0-1.
             $r['skor'] = $vi * 100;
 
             return $r;
         });
 
-        // Langkah 5: urutkan nilai akhir menurun (nama sebagai urutan kedua agar stabil).
         $urut = $baris->sort(function ($a, $b) {
             $selisih = round($b['skor'], 10) <=> round($a['skor'], 10);
 
             return $selisih !== 0 ? $selisih : strcmp($a['mahasiswa']->nama, $b['mahasiswa']->nama);
         })->values();
 
-        // Langkah 6: peringkat; nilai sama -> peringkat sama (RANK Excel).
         $sebelumnya = null;
         $peringkat = 0;
 
@@ -231,10 +163,6 @@ class RankingService
         });
     }
 
-    /**
-     * Simpan hasil perhitungan ke tabel ranking.
-     * Dipakai Staff Prodi lewat tombol "Hitung & Simpan Ranking" dan oleh seeder.
-     */
     public function simpan(int $tahun): int
     {
         $bobot = $this->bobot();
@@ -244,7 +172,6 @@ class RankingService
             return 0;
         }
 
-        // ERD: RANKING (N) -- MENGGUNAKAN --> RANKING_BOBOT (1).
         $bobotId = $bobot->first()?->id_ranking_bobot;
 
         DB::transaction(function () use ($baris, $tahun, $bobotId) {
@@ -254,12 +181,10 @@ class RankingService
                 Ranking::create([
                     'nim' => $r['nim'],
                     'ranking_bobot_id' => $bobotId,
-                    // Matriks X (C1..C4)
                     'nilai_ipk' => $r['c1'],
                     'poin_prestasi_akademik' => $r['c2'],
                     'poin_prestasi_nonakademik' => $r['c3'],
                     'poin_keaktifan_organisasi' => $r['c4'],
-                    // Matriks R (normalisasi R1..R4)
                     'normalisasi_nilai_ipk' => round($r['r1'], 6),
                     'normalisasi_prestasi_akademik' => round($r['r2'], 6),
                     'normalisasi_prestasi_nonakademik' => round($r['r3'], 6),
@@ -274,11 +199,6 @@ class RankingService
         return $baris->count();
     }
 
-    /**
-     * Data ranking untuk halaman publik.
-     * Sumbernya hasil perhitungan yang TERSIMPAN pada tabel ranking
-     * (tahun terakhir), termasuk nilai kriteria & normalisasinya.
-     */
     public function untukPublik(?int $tahun = null): Collection
     {
         $tahun ??= Ranking::max('tahun');
@@ -306,7 +226,6 @@ class RankingService
             ->values();
     }
 
-    /** Tahun ranking tersimpan terakhir (null bila belum ada). */
     public function tahunTerakhir(): ?int
     {
         $tahun = Ranking::max('tahun');
@@ -314,7 +233,6 @@ class RankingService
         return $tahun === null ? null : (int) $tahun;
     }
 
-    /** Peringkat seorang mahasiswa pada tahun ranking terakhir. */
     public function peringkatMahasiswa(string $nim): ?int
     {
         $tahun = Ranking::max('tahun');
@@ -328,7 +246,6 @@ class RankingService
             ->value('peringkat');
     }
 
-    /** Bentuk satu baris data ranking untuk Blade. */
     private function barisTampil(Mahasiswa $m, array $n, int $peringkat): array
     {
         return [
@@ -340,25 +257,21 @@ class RankingService
             'foto' => $m->foto,
             'ipk' => (float) ($m->ipk ?? 0),
 
-            // Nilai kriteria (matriks X)
             'c1' => $n['c1'],
             'c2' => $n['c2'],
             'c3' => $n['c3'],
             'c4' => $n['c4'],
 
-            // Nama deskriptif (alias C1..C4) untuk Blade
             'nilai_akademik' => $n['c1'],
             'prestasi_akademik' => $n['c2'],
             'prestasi_non_akademik' => $n['c3'],
             'keaktifan_organisasi' => $n['c4'],
 
-            // Hasil normalisasi (matriks R)
             'r1' => $n['r1'],
             'r2' => $n['r2'],
             'r3' => $n['r3'],
             'r4' => $n['r4'],
 
-            // Nilai akhir Vi
             'skor' => $n['skor'],
             'peringkat' => $peringkat,
         ];

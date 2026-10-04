@@ -12,9 +12,11 @@
 <body data-page="staff-lowongan">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -53,12 +55,14 @@
             <form method="GET" action="{{ route('staff-lowongan') }}">
               <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="crudSearch" name="q" value="{{ $cari }}" placeholder="Cari posisi / perusahaan..."></div>
             </form>
-            <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahLowongan"><i class="fa-solid fa-plus"></i> Tambah Lowongan</button>
+            {{-- Tombol Tambah --}}
+            <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahLowongan"><i class="fa-solid fa-plus"></i> Tambah Lowongan Kerja</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
-            <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tipe</th><th>Batas Lamaran</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
+            <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tipe</th><th>Batas Lamaran</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
               @forelse ($daftarLowongan as $l)
                 <tr>
@@ -66,7 +70,6 @@
                   <td>{{ $l->perusahaan }}</td>
                   <td>{{ $l->tipe ?? '-' }}</td>
                   <td>{{ $l->batas_lamaran ? $l->batas_lamaran->translatedFormat('d F Y') : '-' }}@if ($l->sudah_ditutup) <span class="badge badge-red">Ditutup</span>@endif</td>
-                  <td><span class="badge {{ $l->status === 'aktif' ? 'badge-green' : 'badge-grey' }}">{{ $l->status === 'aktif' ? 'Aktif' : 'Nonaktif' }}</span></td>
                   <td class="actions">
                     <a href="{{ $l->link }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm btn-icon" title="Buka tautan"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
                     <button class="btn btn-outline btn-sm btn-icon" title="Edit"
@@ -74,7 +77,7 @@
                       data-isi-form="formEditLowongan"
                       data-action="{{ route('staff-lowongan.update', $l) }}"
                       data-judul-modal="Edit Lowongan Kerja"
-                      data-nilai="{{ json_encode(['posisi' => $l->posisi, 'perusahaan' => $l->perusahaan, 'lokasi' => $l->lokasi, 'tipe' => $l->tipe, 'link' => $l->link, 'deskripsi' => $l->deskripsi, 'batas_lamaran' => optional($l->batas_lamaran)->format('Y-m-d'), 'status' => $l->status]) }}"><i class="fa-solid fa-pen"></i></button>
+                      data-nilai="{{ json_encode(['posisi' => $l->posisi, 'perusahaan' => $l->perusahaan, 'lokasi' => $l->lokasi, 'tipe' => $l->tipe, 'link' => $l->link, 'deskripsi' => $l->deskripsi, 'batas_lamaran' => optional($l->batas_lamaran)->format('Y-m-d')]) }}"><i class="fa-solid fa-pen"></i></button>
                     <form method="POST" action="{{ route('staff-lowongan.destroy', $l) }}" style="display:inline;" data-konfirmasi="Hapus lowongan {{ $l->posisi }}?">
                       @csrf
                       @method('DELETE')
@@ -83,7 +86,7 @@
                   </td>
                 </tr>
               @empty
-                <tr class="empty-row"><td colspan="6"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>Belum ada lowongan pekerjaan.</td></tr>
+                <tr class="empty-row"><td colspan="5"><i class="fa-solid fa-inbox" style="font-size:1.4rem; display:block; margin-bottom:10px; color:var(--grey-300);"></i>Belum ada lowongan pekerjaan.</td></tr>
               @endforelse
             </tbody>
           </table>
@@ -99,6 +102,7 @@
         @endif
       </div>
 
+      {{-- Modal Tambah Lowongan Kerja --}}
       <div class="modal-overlay" id="modalTambahLowongan">
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-lowongan.store') }}">
@@ -122,11 +126,6 @@
                 <div class="form-group full"><label>Deskripsi Singkat</label><textarea name="deskripsi" rows="3">{{ old('deskripsi') }}</textarea></div>
                 <div class="form-group"><label>Batas Lamaran</label><input type="date" name="batas_lamaran" value="{{ old('batas_lamaran') }}">
                   <div class="form-hint">Lowongan otomatis tidak tampil setelah tanggal ini.</div></div>
-                <div class="form-group"><label>Status *</label>
-                  <select name="status" required>
-                    <option value="aktif">Aktif</option>
-                    <option value="nonaktif">Nonaktif</option>
-                  </select></div>
               </div>
             </div>
             <div class="modal-foot">
@@ -137,6 +136,7 @@
         </div>
       </div>
 
+      {{-- Modal Edit Lowongan Kerja --}}
       <div class="modal-overlay" id="modalEditLowongan">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditLowongan">
@@ -161,11 +161,6 @@
                 <div class="form-group full"><label>Deskripsi Singkat</label><textarea name="deskripsi" rows="3"></textarea></div>
                 <div class="form-group"><label>Batas Lamaran</label><input type="date" name="batas_lamaran">
                   <div class="form-hint">Lowongan otomatis tidak tampil setelah tanggal ini.</div></div>
-                <div class="form-group"><label>Status *</label>
-                  <select name="status" required>
-                    <option value="aktif">Aktif</option>
-                    <option value="nonaktif">Nonaktif</option>
-                  </select></div>
               </div>
             </div>
             <div class="modal-foot">
@@ -180,7 +175,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

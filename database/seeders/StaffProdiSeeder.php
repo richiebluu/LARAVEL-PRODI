@@ -7,17 +7,8 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Membuat SATU akun Staff Prodi sebagai pintu masuk pertama sistem.
- * Bukan data dummy bisnis: tanpa akun ini tidak ada yang bisa login
- * untuk menginput mahasiswa/dosen.
- *
- * Nilai dapat diatur lewat .env:
- *   STAFF_EMAIL, STAFF_PASSWORD, STAFF_NAMA, STAFF_NIP
- */
 class StaffProdiSeeder extends Seeder
 {
-    /** Nama Staff Prodi beserta gelar (gelar A.Md wajib dipertahankan). */
     public const NAMA_DEFAULT = 'Sylvi, A.Md';
 
     public function run(): void
@@ -28,8 +19,6 @@ class StaffProdiSeeder extends Seeder
         $nama = env('STAFF_NAMA', self::NAMA_DEFAULT);
 
         if ($user = User::where('email', $email)->first()) {
-            // Akun lama masih memakai nama bawaan lama -> sesuaikan ke nama resmi
-            // (gelar A.Md dipertahankan apa adanya).
             if ($user->name === 'Staff Prodi Teknologi Informasi' && $nama !== $user->name) {
                 $user->update(['name' => $nama]);
                 $user->staffProdi?->update(['nama' => $nama]);
@@ -49,7 +38,6 @@ class StaffProdiSeeder extends Seeder
                 'role' => 'staff',
             ]);
 
-            // ERD: USERS (1) -- MEMILIKI -- (1) STAFF_PRODI lewat staff_prodi.id_user.
             StaffProdi::create([
                 'id_user' => $user->id_user,
                 'nip' => $nip,

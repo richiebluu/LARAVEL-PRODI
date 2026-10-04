@@ -1,7 +1,4 @@
-/* ==========================================================================
-   PROGRAM STUDI TEKNOLOGI INFORMASI — MAIN STYLESHEET
-   Konsep warna: Navy/Biru Tua teknologi, banyak whitespace, card-based.
-   ========================================================================== */
+/* Program Studi Teknologi Informasi */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
@@ -144,7 +141,7 @@ section {
   text-align: left;
 }
 
-/* Buttons ---------------------------------------------------------------- */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -211,9 +208,7 @@ section {
   transform: translateY(-3px);
 }
 
-/* ==========================================================================
-   NAVBAR
-   ========================================================================== */
+/* Navbar */
 .navbar {
   position: sticky;
   top: 0;
@@ -426,9 +421,7 @@ section {
   background: #fff;
 }
 
-/* ==========================================================================
-   SEARCH OVERLAY
-   ========================================================================== */
+/* Search Overlay */
 .search-backdrop {
   position: fixed;
   inset: 0;
@@ -613,9 +606,7 @@ section {
   }
 }
 
-/* ==========================================================================
-   HERO SLIDER (Beranda) — modern / premium interaction
-   ========================================================================== */
+/* Hero Slider */
 .hero-slider {
   position: relative;
   height: 92vh;
@@ -692,7 +683,6 @@ section {
   margin-top: 32px;
 }
 
-/* Staggered content reveal — badge -> title -> description -> CTA */
 .hero-content .eyebrow,
 .hero-content h1,
 .hero-content p,
@@ -729,7 +719,6 @@ section {
   }
 }
 
-/* Subtle decorative cursor-follow glow (desktop only, see JS) */
 .hero-cursor-glow {
   position: absolute;
   z-index: 1;
@@ -745,7 +734,6 @@ section {
   transition: opacity .4s ease;
 }
 
-/* Minimal, semi-transparent nav buttons */
 .hero-nav-btn {
   position: absolute;
   top: 50%;
@@ -791,7 +779,6 @@ section {
   right: 28px;
 }
 
-/* Modern progress-style indicators */
 .hero-indicators {
   position: absolute;
   bottom: 32px;
@@ -847,7 +834,6 @@ section {
   }
 }
 
-/* Respect reduced-motion preference */
 @media(prefers-reduced-motion:reduce) {
   .hero-slide {
     transition: opacity .3s linear;
@@ -877,9 +863,7 @@ section {
   }
 }
 
-/* ==========================================================================
-   PAGE HERO (halaman internal)
-   ========================================================================== */
+/* Page Hero */
 .page-hero {
   background: var(--grad-primary);
   padding: 170px 0 70px 0;
@@ -945,9 +929,7 @@ section {
   font-weight: 600;
 }
 
-/* ==========================================================================
-   KODEX SECTION
-   ========================================================================== */
+/* Kodex Section */
 .kodex-section {
   background: var(--grad-soft);
   overflow: hidden;
@@ -972,7 +954,6 @@ section {
 }
 
 @keyframes floaty {
-
   0%,
   100% {
     transform: translateY(0px);
@@ -1035,9 +1016,7 @@ section {
   margin-top: 22px;
 }
 
-/* ==========================================================================
-   STATS / CAPAIAN PRODI
-   ========================================================================== */
+/* Stats / Capaian Prodi */
 .stats-section {
   background: var(--navy-900);
   color: #fff;
@@ -1084,9 +1063,7 @@ section {
   font-weight: 500;
 }
 
-/* ==========================================================================
-   ACCREDITATION
-   ========================================================================== */
+/* Accreditation */
 .akreditasi-card {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -1125,9 +1102,7 @@ section {
   margin-bottom: 10px;
 }
 
-/* ==========================================================================
-   GENERIC CARDS
-   ========================================================================== */
+/* Generic Cards */
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1370,7 +1345,7 @@ section {
   aspect-ratio: 1/1;
 }
 
-/* CTA ---------------------------------------------------------------------*/
+/* CTA */
 .cta-section {
   background: var(--grad-primary);
   border-radius: var(--radius-lg);
@@ -1423,7 +1398,7 @@ section {
   animation: floaty 4.5s ease-in-out infinite;
 }
 
-/* Video PKL ---------------------------------------------------------------*/
+/* Video PKL */
 .video-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1477,7 +1452,7 @@ section {
   transform: translate(-50%, -50%) scale(1.1);
 }
 
-/* Social --------------------------------------------------------------------*/
+/* Social */
 .social-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1554,7 +1529,7 @@ section {
   color: var(--grey-500);
 }
 
-/* Footer --------------------------------------------------------------------*/
+/* Footer */
 .footer {
   background: var(--ink);
   color: rgba(255, 255, 255, .7);
@@ -1633,7 +1608,7 @@ section {
   gap: 10px;
 }
 
-/* Back to top ---------------------------------------------------------------*/
+/* Back to top */
 .back-to-top {
   position: fixed;
   bottom: 30px;
@@ -1663,7 +1638,7 @@ section {
   transform: translateY(0);
 }
 
-/* Reveal animation ------------------------------------------------------- */
+/* Reveal animation */
 .reveal {
   opacity: 0;
   transform: translateY(30px);
@@ -1679,7 +1654,7 @@ section {
   transition-delay: calc(var(--i, 0) * 90ms);
 }
 
-/* Filter bar --------------------------------------------------------------*/
+/* Filter bar */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1710,7 +1685,7 @@ section {
   color: #fff;
 }
 
-/* Search bar ---------------------------------------------------------------*/
+/* Search bar */
 .search-bar {
   display: flex;
   gap: 12px;
@@ -1740,7 +1715,7 @@ section {
   border-color: var(--blue-600);
 }
 
-/* Accordion (kurikulum) -----------------------------------------------------*/
+/* Accordion */
 .accordion-item {
   border: 1px solid var(--grey-100);
   border-radius: var(--radius-sm);
@@ -1792,7 +1767,7 @@ section {
   font-weight: 700;
 }
 
-/* Testimonial ---------------------------------------------------------------*/
+/* Testimonial */
 .testi-card {
   padding: 30px 28px;
 }
@@ -1818,7 +1793,7 @@ section {
   background-position: center;
 }
 
-/* Modal ---------------------------------------------------------------------*/
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1879,7 +1854,7 @@ section {
   margin-bottom: 16px;
 }
 
-/* Bg helpers ----------------------------------------------------------------*/
+/* Bg helpers */
 .bg-grey {
   background: var(--grey-50);
 }
@@ -1898,7 +1873,7 @@ section {
   background: var(--grad-soft);
 }
 
-/* Contact form ----------------------------------------------------------------*/
+/* Contact form */
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1979,7 +1954,7 @@ section {
   border: 1px solid var(--grey-100);
 }
 
-/* Prospek / icon list -----------------------------------------------------*/
+/* Prospek / icon list */
 .icon-card {
   padding: 32px 26px;
   text-align: center;
@@ -1989,7 +1964,7 @@ section {
   margin: 0 auto 18px auto;
 }
 
-/* Overview link cards (profil.html, akademik.html, dll) ---------------------*/
+/* Overview link cards */
 .link-card {
   padding: 34px 30px;
   display: flex;
@@ -2020,9 +1995,7 @@ section {
   transition: transform .2s ease;
 }
 
-/* ==========================================================================
-   SEARCH PANEL (navbar)
-   ========================================================================== */
+/* Search Panel */
 .search-panel {
   position: absolute;
   top: 100%;
@@ -2195,7 +2168,7 @@ section {
   }
 }
 
-/* Responsive ---------------------------------------------------------------*/
+/* Responsive */
 @media(max-width:1080px) {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
@@ -2223,7 +2196,6 @@ section {
 }
 
 @media(max-width:900px) {
-
   .nav-menu,
   .nav-actions .lang-switch {
     display: none;
@@ -2301,7 +2273,6 @@ section {
 }
 
 @media(max-width:640px) {
-
   .grid-4,
   .grid-3 {
     grid-template-columns: 1fr;

@@ -12,38 +12,17 @@
 <body data-page="mahasiswa-pengumuman">
   <div class="admin-shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-badge brand-logo"><img src="{{ asset('images/logo-ti.png') }}" alt="Logo Program Studi Teknologi Informasi"></div>
-      <div>
-        <span class="b1">POLITALA</span>
-        <span class="b2">Dashboard Mahasiswa</span>
-      </div>
-    </div>
-    <nav class="sidebar-menu">
-      <div class="menu-label">MENU UTAMA</div>
-      <a href="{{ url('/mahasiswa-dashboard') }}" class="side-link"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-      <a href="{{ url('/mahasiswa-profile') }}" class="side-link"><i class="fa-solid fa-id-card"></i> Profil Saya</a>
-      <a href="{{ url('/mahasiswa-prestasi') }}" class="side-link"><i class="fa-solid fa-trophy"></i> Prestasi Saya</a>
-      <a href="{{ url('/mahasiswa-ajukan-prestasi') }}" class="side-link"><i class="fa-solid fa-plus"></i> Ajukan Prestasi</a>
-      <a href="{{ url('/ranking') }}" class="side-link"><i class="fa-solid fa-ranking-star"></i> Ranking</a>
-      <a href="{{ url('/mahasiswa-pengumuman') }}" class="side-link"><i class="fa-solid fa-bullhorn"></i> Pengumuman</a>
-      <a href="{{ url('/mahasiswa-notifikasi') }}" class="side-link"><i class="fa-solid fa-bell"></i> Notifikasi</a>
-      <div class="menu-label">WEBSITE PUBLIK</div>
-      <a href="{{ url('/') }}" class="side-link"><i class="fa-solid fa-globe"></i> Lihat Website</a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#" class="side-link logout" data-logout><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-    </div>
-  </aside>
+  {{-- Sidebar --}}
+  @include('partials.mahasiswa-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
           <div>
             <h1>Pengumuman</h1>
-            <div class="subtitle">Informasi resmi yang ditujukan untuk mahasiswa.</div>
+            <div class="subtitle">Informasi resmi dari Staff Prodi dan informasi status pengajuan Anda.</div>
           </div>
         </div>
         <div class="admin-profile">
@@ -64,14 +43,25 @@
       </div>
       <div id="listPengumuman">
         @forelse ($daftarPengumuman as $item)
-          @php $g = $item; @endphp
+          @php $g = $item; $sistem = $g->status === \App\Models\Pengumuman::STATUS_NOTIFIKASI; @endphp
           <div class="panel" style="margin-bottom:14px;">
-            <span class="badge badge-blue">{{ $g->label_kategori }}</span>
+            @if ($sistem)
+              <span class="badge badge-cyan"><i class="fa-solid fa-circle-info"></i> Informasi Pengajuan</span>
+            @endif
+            @if (! $sistem || $g->kategori)
+              <span class="badge badge-blue">{{ $g->label_kategori }}</span>
+            @endif
+            @if ($g->belum_dibaca)
+              <span class="badge badge-green">Baru</span>
+            @endif
             <h3 style="margin:12px 0 6px 0; font-size:1.02rem;">{{ $g->judul }}</h3>
             <p style="font-size:.8rem; color:var(--grey-500);">
-              {{ optional($g->tanggal_dikirim ?? $g->created_at)->translatedFormat('d F Y') }} &middot; Ditujukan untuk Anda
+              {{ optional($g->tanggal_dikirim ?? $g->created_at)->translatedFormat('d F Y, H:i') }} &middot; {{ $sistem ? 'Informasi sistem' : 'Ditujukan untuk Anda' }}
             </p>
             <p style="font-size:.88rem; margin-top:10px;">{{ $g->isi }}</p>
+            @if ($g->prestasi)
+              <p style="font-size:.8rem; color:var(--grey-500); margin-top:8px;"><i class="fa-solid fa-trophy"></i> Terkait prestasi: {{ $g->prestasi->judul }}</p>
+            @endif
           </div>
         @empty
           <div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>Belum ada pengumuman untuk Anda.</p></div>
@@ -82,7 +72,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

@@ -22,13 +22,10 @@ class DashboardController extends Controller
         private readonly NotifikasiService $notifikasi,
     ) {}
 
-    /** Data mahasiswa milik user yang sedang login. */
     private function mahasiswa(): ?Mahasiswa
     {
         return Auth::user()?->mahasiswa;
     }
-
-    /* ---------------- Dashboard ---------------- */
 
     public function index()
     {
@@ -38,14 +35,7 @@ class DashboardController extends Controller
             ? $mahasiswa->prestasi()->latest('created_at')->get()
             : collect();
 
-        // REVISI DOSEN 01-10-2026: pengumuman diterima lewat tabel pengumuman_penerima.
-        $pengumuman = $mahasiswa
-            ? $mahasiswa->pengumumanDiterima()
-                ->terkirim()
-                ->latest('pengumuman.created_at')
-                ->take(4)
-                ->get()
-            : collect();
+        $semuaPengumuman = $mahasiswa ? $this->pengumumanMahasiswa($mahasiswa) : collect();
 
         return view('mahasiswa-dashboard', [
             'mahasiswa' => $mahasiswa,
@@ -53,15 +43,12 @@ class DashboardController extends Controller
             'jumlahDisetujui' => $prestasi->where('status', Prestasi::STATUS_DISETUJUI)->count(),
             'jumlahMenunggu' => $prestasi->where('status', Prestasi::STATUS_MENUNGGU)->count(),
             'peringkat' => $mahasiswa ? $this->ranking->peringkatMahasiswa($mahasiswa->nim) : null,
-            'notifikasi' => $this->notifikasiUser()->take(3),
-            'daftarPengumuman' => $pengumuman,
-            // Nilai empat kriteria penilaian (dihitung langsung dari database).
+            'daftarPengumuman' => $semuaPengumuman->take(4),
+            'jumlahBelumDibaca' => $semuaPengumuman->filter(fn (Pengumuman $g) => $g->belum_dibaca)->count(),
             'nilaiKriteria' => $mahasiswa ? $this->ranking->nilaiKriteria($mahasiswa) : null,
             'daftarOrganisasi' => $mahasiswa ? $mahasiswa->organisasi()->get() : collect(),
         ]);
     }
-
-    /* ---------------- Profil ---------------- */
 
     public function profil()
     {
@@ -71,18 +58,11 @@ class DashboardController extends Controller
         return view('mahasiswa-profile', [
             'mahasiswa' => $mahasiswa,
             'daftarOrganisasi' => $organisasi,
-            // Poin C4 dihitung sistem (RankingService), hanya ditampilkan (read-only).
             'poinOrganisasi' => $this->ranking->skorOrganisasi($organisasi),
             'daftarJabatan' => Organisasi::daftarJabatan(),
-            'maksOrganisasi' => \App\Http\Controllers\Staff\MahasiswaController::MAKS_ORGANISASI,
         ]);
     }
 
-    /**
-     * REVISI 26-09-2026 — pengajuan perubahan TANPA verifikasi/persetujuan.
-     * Alur: Mahasiswa -> Form -> VALIDASI -> data langsung tersimpan.
-     * (Tabel riwayat pengajuan_perubahan dihapus karena tidak terdapat pada ERD.)
-     */
     public function simpanPerubahan(Request $request)
     {
         $mahasiswa = $this->mahasiswa();
@@ -94,7 +74,6 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $data = $request->validate([
-            // Satu email: email profil = email login (wajib email institusi dan belum dipakai akun lain).
             'email' => [
                 'required', 'email', 'max:150',
                 Rule::unique('users', 'email')->ignore($user->id_user, 'id_user'),
@@ -134,7 +113,6 @@ class DashboardController extends Controller
                 'kelas' => $baru['kelas'] !== '' ? $baru['kelas'] : null,
             ]);
 
-            // Email login selalu sama dengan email profil.
             $user->update(['email' => $baru['email']]);
         });
 
@@ -143,11 +121,6 @@ class DashboardController extends Controller
             ->with('success', 'Perubahan data diri berhasil disimpan.');
     }
 
-    /**
-     * Keaktifan Organisasi (kriteria C4) diinput mahasiswa dari Profil Saya.
-     * REVISI 26-09-2026: tanpa verifikasi — cukup validasi, lalu langsung tersimpan
-     * ke tabel `organisasi` dan dihitung pada perhitungan ranking SAW berikutnya.
-     */
     public function simpanOrganisasi(Request $request)
     {
         $mahasiswa = $this->mahasiswa();
@@ -156,37 +129,31 @@ class DashboardController extends Controller
             return back()->withErrors(['organisasi' => 'Akun Anda belum terhubung ke data mahasiswa.']);
         }
 
-        $maks = \App\Http\Controllers\Staff\MahasiswaController::MAKS_ORGANISASI;
-
         $data = $request->validate([
-            'organisasi' => ['nullable', 'array', 'max:'.$maks],
+            'organisasi' => ['required', 'array', 'min:1', 'max:20'],
             'organisasi.*.nama_organisasi' => ['nullable', 'string', 'max:150', 'required_with:organisasi.*.jabatan'],
             'organisasi.*.jabatan' => ['nullable', Rule::in(array_keys(Organisasi::daftarJabatan())), 'required_with:organisasi.*.nama_organisasi'],
         ], [
+            'organisasi.required' => 'Isi minimal satu organisasi.',
+            'organisasi.max' => 'Maksimal 20 organisasi sekali simpan.',
             'organisasi.*.nama_organisasi.required_with' => 'Nama organisasi wajib diisi bila jabatan dipilih.',
             'organisasi.*.jabatan.required_with' => 'Jabatan organisasi wajib dipilih bila nama organisasi diisi.',
             'organisasi.*.jabatan.in' => 'Jabatan organisasi tidak sesuai skema poin.',
         ]);
 
-        $bentuk = fn ($daftar) => collect($daftar)
+        $baru = collect($data['organisasi'])
             ->map(fn ($o) => [
                 'nama_organisasi' => trim((string) ($o['nama_organisasi'] ?? '')),
                 'jabatan' => (string) ($o['jabatan'] ?? ''),
             ])
             ->filter(fn ($o) => $o['nama_organisasi'] !== '' && $o['jabatan'] !== '')
-            ->values()
-            ->all();
+            ->values();
 
-        $lama = $bentuk($mahasiswa->organisasi()->get(['nama_organisasi', 'jabatan'])->toArray());
-        $baru = $bentuk($data['organisasi'] ?? []);
-
-        if ($lama === $baru) {
-            return back()->withErrors(['organisasi' => 'Tidak ada data organisasi yang berubah.']);
+        if ($baru->isEmpty()) {
+            return back()->withErrors(['organisasi' => 'Isi minimal satu organisasi beserta jabatannya.'])->withInput();
         }
 
         DB::transaction(function () use ($mahasiswa, $baru) {
-            $mahasiswa->organisasi()->delete();
-
             foreach ($baru as $o) {
                 Organisasi::create([
                     'nim' => $mahasiswa->nim,
@@ -198,10 +165,49 @@ class DashboardController extends Controller
 
         return redirect()
             ->route('mahasiswa-profile')
-            ->with('success', 'Data Keaktifan Organisasi berhasil disimpan. Poin dihitung pada perhitungan ranking berikutnya.');
+            ->with('success', $baru->count().' organisasi berhasil ditambahkan. Poin dihitung pada perhitungan ranking berikutnya.');
     }
 
-    /* ---------------- Prestasi ---------------- */
+    public function ubahOrganisasi(Request $request, Organisasi $organisasi)
+    {
+        $this->pastikanMilikSendiri($organisasi);
+
+        $data = $request->validate([
+            'nama_organisasi' => ['required', 'string', 'max:150'],
+            'jabatan' => ['required', Rule::in(array_keys(Organisasi::daftarJabatan()))],
+        ], [
+            'jabatan.in' => 'Jabatan organisasi tidak sesuai skema poin.',
+        ], [
+            'nama_organisasi' => 'Nama organisasi',
+            'jabatan' => 'Jabatan organisasi',
+        ]);
+
+        $organisasi->update([
+            'nama_organisasi' => trim($data['nama_organisasi']),
+            'jabatan' => $data['jabatan'],
+        ]);
+
+        return redirect()
+            ->route('mahasiswa-profile')
+            ->with('success', 'Data organisasi berhasil diperbarui. Poin dihitung pada perhitungan ranking berikutnya.');
+    }
+
+    public function hapusOrganisasi(Organisasi $organisasi)
+    {
+        $this->pastikanMilikSendiri($organisasi);
+
+        $nama = $organisasi->nama_organisasi;
+        $organisasi->delete();
+
+        return redirect()
+            ->route('mahasiswa-profile')
+            ->with('success', 'Organisasi "'.$nama.'" berhasil dihapus.');
+    }
+
+    private function pastikanMilikSendiri(Organisasi $organisasi): void
+    {
+        abort_unless($this->mahasiswa() && $organisasi->nim === $this->mahasiswa()->nim, 403);
+    }
 
     public function prestasi(Request $request)
     {
@@ -228,7 +234,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    /** Simpan pengajuan prestasi ke database dengan status "menunggu". */
     public function simpanPrestasi(Request $request)
     {
         $mahasiswa = $this->mahasiswa();
@@ -245,12 +250,15 @@ class DashboardController extends Controller
             'tanggal' => ['required', 'date', 'before_or_equal:today'],
             'deskripsi' => ['nullable', 'string', 'max:1000'],
             'dokumen' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:4096'],
-        ], [], [
+        ], [
+            'dokumen.mimes' => 'Sertifikat harus berupa PDF atau gambar (JPG/PNG).',
+            'dokumen.max' => 'Ukuran sertifikat maksimal 4 MB.',
+        ], [
             'kategori' => 'Kategori prestasi',
             'tingkat' => 'Tingkat prestasi',
             'judul' => 'Nama prestasi',
             'tanggal' => 'Tanggal prestasi',
-            'dokumen' => 'Berkas bukti',
+            'dokumen' => 'Sertifikat',
         ]);
 
         $prestasi = Prestasi::create([
@@ -279,8 +287,6 @@ class DashboardController extends Controller
             ->with('success', 'Pengajuan prestasi berhasil dikirim. Status: menunggu.');
     }
 
-    /* ---------------- Pengumuman ---------------- */
-
     public function pengumuman(Request $request)
     {
         $mahasiswa = $this->mahasiswa();
@@ -289,19 +295,10 @@ class DashboardController extends Controller
             $kategori = null;
         }
 
-        // Hanya pengumuman yang penerimanya memuat mahasiswa ini (tabel pengumuman_penerima).
-        $daftar = $mahasiswa
-            ? $mahasiswa->pengumumanDiterima()
-                ->with('prestasi')
-                ->terkirim()
-                ->when($kategori, fn ($k) => $k->where('pengumuman.kategori', $kategori))
-                ->latest('pengumuman.created_at')
-                ->get()
-            : collect();
+        $daftar = $mahasiswa ? $this->pengumumanMahasiswa($mahasiswa, $kategori) : collect();
 
-        // Tandai sudah dibaca — status baca milik mahasiswa ini saja (pivot dibaca_pada).
         if ($mahasiswa) {
-            $this->tandaiPengumumanDibaca($mahasiswa->nim);
+            $this->tandaiSemuaDibaca($mahasiswa->nim);
         }
 
         return view('mahasiswa-pengumuman', [
@@ -310,63 +307,30 @@ class DashboardController extends Controller
         ]);
     }
 
-    /* ---------------- Notifikasi ---------------- */
-
-    public function notifikasi()
+    private function pengumumanMahasiswa(Mahasiswa $mahasiswa, ?string $kategori = null)
     {
-        return view('mahasiswa-notifikasi', [
-            'daftarNotifikasi' => $this->notifikasiUser(),
-        ]);
-    }
-
-    public function bacaNotifikasi()
-    {
-        $nim = $this->mahasiswa()?->nim;
-
-        if ($nim) {
-            // Pesan sistem pribadi (pengumuman.nim) ...
-            Pengumuman::notifikasiUntuk($nim)
-                ->whereNull('dibaca_pada')
-                ->update(['dibaca_pada' => now()]);
-
-            // ... dan pengumuman Staff yang diterima mahasiswa ini (pengumuman_penerima).
-            $this->tandaiPengumumanDibaca($nim);
-        }
-
-        return redirect()
-            ->route('mahasiswa-notifikasi')
-            ->with('success', 'Semua notifikasi ditandai sudah dibaca.');
-    }
-
-    /**
-     * Notifikasi mahasiswa = gabungan:
-     *  1. pesan sistem pribadi (pengumuman berstatus "notifikasi", kolom pengumuman.nim), dan
-     *  2. pengumuman Staff berstatus terkirim yang penerimanya memuat mahasiswa ini
-     *     (tabel pengumuman_penerima, status baca di pivot dibaca_pada).
-     */
-    private function notifikasiUser()
-    {
-        $mahasiswa = $this->mahasiswa();
-
-        if (! $mahasiswa) {
-            return collect();
-        }
-
-        $sistem = Pengumuman::notifikasiUntuk($mahasiswa->nim)->get();
-
-        $pengumuman = $mahasiswa->pengumumanDiterima()
+        $staff = $mahasiswa->pengumumanDiterima()
+            ->with('prestasi')
             ->terkirim()
-            ->whereNotNull('pengumuman.notifikasi')
+            ->when($kategori, fn ($q) => $q->where('pengumuman.kategori', $kategori))
             ->get();
 
-        return $sistem->concat($pengumuman)
+        $sistem = Pengumuman::notifikasiUntuk($mahasiswa->nim)
+            ->with('prestasi')
+            ->when($kategori, fn ($q) => $q->where('pengumuman.kategori', $kategori))
+            ->get();
+
+        return $staff->concat($sistem)
             ->sortByDesc(fn (Pengumuman $n) => sprintf('%s-%010d', optional($n->tanggal_dikirim ?? $n->created_at)->format('YmdHis'), $n->id_pengumuman))
             ->values();
     }
 
-    /** Tandai semua pengumuman terkirim untuk mahasiswa ini sebagai sudah dibaca. */
-    private function tandaiPengumumanDibaca(string $nim): void
+    private function tandaiSemuaDibaca(string $nim): void
     {
+        Pengumuman::notifikasiUntuk($nim)
+            ->whereNull('dibaca_pada')
+            ->update(['dibaca_pada' => now()]);
+
         DB::table('pengumuman_penerima')
             ->where('nim', $nim)
             ->whereNull('dibaca_pada')

@@ -7,10 +7,6 @@ use Illuminate\Http\Request;
 
 class LowonganPekerjaanController extends Controller
 {
-    /**
-     * Halaman Lowongan Pekerjaan (REVISI 26-09-2026).
-     * Menampilkan informasi & link ke sumber eksternal; proses lamaran tidak di website ini.
-     */
     public function index(Request $request)
     {
         $cari = trim((string) $request->query('q'));

@@ -19,7 +19,6 @@ class PrestasiController extends Controller
         $status = $request->query('status');
         $kategori = $request->query('kategori');
 
-        // Filter "Disetujui/Approved" dihapus dari halaman ini (revisi dosen).
         if (! in_array($status, [Prestasi::STATUS_MENUNGGU, Prestasi::STATUS_DITOLAK], true)) {
             $status = null;
         }
@@ -52,7 +51,6 @@ class PrestasiController extends Controller
         ]);
     }
 
-    /** Verifikasi prestasi: setujui atau tolak. */
     public function verifikasi(Request $request, Prestasi $prestasi)
     {
         $data = $request->validate([
@@ -62,7 +60,6 @@ class PrestasiController extends Controller
 
         $disetujui = $data['status'] === Prestasi::STATUS_DISETUJUI;
 
-        // ERD: STAFF_PRODI (1) -- MEMVERIFIKASI -- (N) PRESTASI -> staff_prodi_id.
         $prestasi->update([
             'staff_prodi_id' => Auth::user()?->staffProdi?->id_staff_prodi,
             'status' => $data['status'],

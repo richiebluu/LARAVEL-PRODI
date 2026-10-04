@@ -10,11 +10,6 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-/**
- * Email pengumuman untuk MAHASISWA BERPRESTASI (REVISI 26-09-2026).
- * Dikirim lewat akun Gmail Program Studi (SMTP Gmail di .env) ke email
- * mahasiswa penerima — bukan berdasarkan urutan ranking.
- */
 class PengumumanMahasiswaBerprestasi extends Mailable
 {
     use Queueable, SerializesModels;

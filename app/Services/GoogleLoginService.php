@@ -5,23 +5,8 @@ namespace App\Services;
 use App\Exceptions\GoogleLoginDitolak;
 use App\Models\User;
 
-/**
- * Aturan akun untuk "Login dengan Google" (REVISI 26-09-2026).
- *
- * Alur:
- *   Google Login -> email diverifikasi Google
- *     -> domain PERSIS  @mhs.politala.ac.id -> cari akun MAHASISWA terdaftar
- *     -> domain PERSIS  @politala.ac.id     -> cari akun STAFF PRODI terdaftar
- *     -> domain lain (gmail.com, yahoo.com, mhs.universitaslain.ac.id, ...) -> DITOLAK
- *
- * Domain hanya menentukan JENIS akun yang dicari; sumber kebenaran tetap database.
- * Sistem TIDAK pernah membuat akun baru secara otomatis dari Google.
- */
 class GoogleLoginService
 {
-    /**
-     * @throws GoogleLoginDitolak
-     */
     public function cariAkun(?string $email, bool $emailTerverifikasi, ?string $googleId): User
     {
         $email = strtolower(trim((string) $email));
@@ -51,7 +36,6 @@ class GoogleLoginService
             throw new GoogleLoginDitolak(GoogleLoginDitolak::PESAN_UMUM);
         }
 
-        // Satu akun Google per akun sistem: bila sudah pernah terhubung, ID harus sama.
         if ($googleId !== null && $googleId !== '') {
             if ($user->google_id && $user->google_id !== $googleId) {
                 throw new GoogleLoginDitolak('Akun ini sudah terhubung dengan akun Google lain. Hubungi Staff Prodi.');

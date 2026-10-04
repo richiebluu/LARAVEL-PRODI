@@ -12,9 +12,11 @@
 <body data-page="staff-ranking">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -37,7 +39,7 @@
         <div class="alert-error"><strong><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first() }}</strong></div>
       @endif
 
-      {{-- ===== BOBOT KRITERIA + DASAR PEMBOBOTAN (REVISI DOSEN 01-10-2026) ===== --}}
+      {{-- Bobot Kriteria + Dasar Pembobotan --}}
       <div class="panel">
         <div class="panel-head">
           <h2>Bobot Kriteria &amp; Dasar Pembobotan</h2>
@@ -48,6 +50,7 @@
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Kode</th><th>Kriteria</th><th>Bobot</th><th>Dasar Pembobotan</th></tr></thead>
             <tbody>
@@ -82,8 +85,7 @@
         </p>
       </div>
 
-      {{-- ===== PERHITUNGAN BOBOT AHP (REVISI DOSEN 01-10-2026) =====
-           Angka berasal dari App\Http\Controllers\Staff\RankingController::hitungAHP(). --}}
+      {{-- Perhitungan Bobot AHP --}}
       <div class="panel">
         <div class="panel-head">
           <h2>Perhitungan Bobot AHP</h2>
@@ -100,6 +102,7 @@
 
         <h4 style="margin:4px 0 10px 0;">1. Matriks Perbandingan Berpasangan (skala Saaty 1–9)</h4>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Kriteria</th>@foreach ($ahp['kode'] as $kolom)<th>{{ $kolom }}</th>@endforeach</tr></thead>
             <tbody>
@@ -122,6 +125,7 @@
 
         <h4 style="margin:22px 0 10px 0;">3–4. Normalisasi Matriks &amp; Priority Vector (Bobot)</h4>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Kriteria</th>@foreach ($ahp['kode'] as $kolom)<th>{{ $kolom }}</th>@endforeach<th>Jumlah Baris</th><th>Priority Vector (w)</th><th>Bobot Dipakai</th></tr></thead>
             <tbody>
@@ -140,6 +144,7 @@
 
         <h4 style="margin:22px 0 10px 0;">5–6. Weighted Sum Vector &amp; Consistency Vector</h4>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Kriteria</th><th>Weighted Sum (A &times; w)</th><th>Priority Vector (w)</th><th>Consistency Vector (WSV / w)</th></tr></thead>
             <tbody>
@@ -171,7 +176,7 @@
         </p>
       </div>
 
-      {{-- Modal ubah dasar pembobotan (teks saja; angka bobot tetap hasil AHP). --}}
+      {{-- Modal Ubah Dasar Pembobotan --}}
       <div class="modal-overlay" id="modalDasarPembobotan" @if ($errors->has('dasar') || $errors->has('dasar.*')) data-buka-otomatis @endif>
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-ranking.dasar') }}">
@@ -198,11 +203,12 @@
         </div>
       </div>
 
-      {{-- ===== SKEMA POIN (acuan sheet "Skema Skor") ===== --}}
+      {{-- Skema Poin --}}
       <div class="two-col">
         <div class="panel">
           <div class="panel-head"><h2>Skema Poin Tingkat Prestasi</h2></div>
           <div class="table-wrap">
+            {{-- Tabel --}}
             <table class="data-table">
               <thead><tr><th>Tingkat Prestasi</th><th>Prestasi Akademik (C2)</th><th>Prestasi Non-Akademik (C3)</th></tr></thead>
               <tbody>
@@ -226,6 +232,7 @@
         <div class="panel">
           <div class="panel-head"><h2>Skema Poin Jabatan Organisasi</h2></div>
           <div class="table-wrap">
+            {{-- Tabel --}}
             <table class="data-table">
               <thead><tr><th>Jabatan</th><th>Poin</th></tr></thead>
               <tbody>
@@ -239,7 +246,7 @@
         </div>
       </div>
 
-      {{-- ===== HASIL PERHITUNGAN SAW ===== --}}
+      {{-- Hasil Perhitungan SAW --}}
       <div class="panel">
         <div class="panel-head">
           <h2>Hasil Perhitungan Ranking (SAW)</h2>
@@ -251,7 +258,7 @@
             </form>
             @if ($rankingTersimpan > 0)
               <form method="POST" action="{{ route('staff-ranking.reset') }}" style="display:inline;"
-                    data-konfirmasi="Kosongkan seluruh data ranking?">
+                    data-konfirmasi="Kosongkan seluruh data ranking yang tersimpan?" data-konfirmasi-judul="Reset Data Ranking?" data-konfirmasi-tombol="Ya, Kosongkan" data-konfirmasi-catatan="Halaman ranking publik akan kosong sampai ranking dihitung ulang.">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> Reset</button>
@@ -261,6 +268,7 @@
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr>
               <th>Ranking</th><th>Mahasiswa</th>
@@ -293,10 +301,11 @@
         </p>
       </div>
 
-      {{-- ===== MATRIKS NORMALISASI ===== --}}
+      {{-- Matriks Normalisasi --}}
       <div class="panel">
         <div class="panel-head"><h2>Matriks Normalisasi (R)</h2></div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr>
               <th>Ranking</th><th>Mahasiswa</th>
@@ -332,7 +341,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

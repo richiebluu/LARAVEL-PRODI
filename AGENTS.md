@@ -38,3 +38,11 @@ Lihat REVISI-DATABASE.md dan REVISI-2026-09-24.md untuk rincian lengkap.
 > di luar ERD atas permintaan pemilik project. Lihat REVISI-ERD-2026-09-29.md.
 
 > Revisi dosen 01-10-2026: akreditasi utama (Terakreditasi + tanggal terbaru), per_page mahasiswa 5/10/15/20, dasar pembobotan + AHP di Staff\RankingController::hitungAHP(), pengumuman banyak penerima (tabel pengumuman_penerima), hero publik foto GTI (App\Support\HeroFoto). Lihat REVISI-2026-10-01.md.
+
+> Revisi dosen 02-10-2026: sidebar Staff collapse, dashboard Staff tanpa Quick Action/Alur Sistem, jabatan Struktur Organisasi dropdown berhierarki + bagan otomatis, Prospek Lulusan tanpa kategori (ikon bebas), Kurikulum → Mata Kuliah, Sarana tanpa deskripsi, Kegiatan Mahasiswa digabung ke Berita (`berita.jenis`), Notifikasi mahasiswa digabung ke Pengumuman, media sosial via `config/prodi.php`. Lihat REVISI-2026-10-02.md.
+
+> Revisi review 03-10-2026: Kegiatan Prodi (label jenis berita), sidebar Mahasiswa collapse, lowongan tanpa status, sarana pakai `gedung` (tanpa jenis/lokasi), berprestasi tanpa tab Keaktifan Organisasi, AKAMAWA ala Pengumuman, Tambah Keaktifan Organisasi fleksibel. Lihat REVISI-2026-10-03.md.
+
+> Revisi 03-10-2026 tahap 2: `mata_kuliah.program_studi_id` (FK -> `program_studi.id_program_studi`, diisi otomatis dari Profil Prodi, tanpa dropdown); `program_studi.link_media_sosial` (link media sosial website, satu baris satu URL, dikelola di Profil Prodi; config/prodi.php jadi cadangan); `berita.link_media_sosial` (link postingan media sosial, opsional, tombol "Lihat Postingan Media Sosial" di detail berita). Lihat REVISI-2026-10-03-TAHAP-2.md.
+
+> Revisi 04-10-2026: komentar kode dibersihkan (hanya label bagian), migration dirapikan satu file per tabel + `sinkronkan_struktur_database`, tabel `kegiatan_mahasiswa`/`password_reset_tokens`/`job_batches` dihapus, PK `mata_kuliah` = `kode_mata_kuliah`. Lihat REVISI-2026-10-04.md.

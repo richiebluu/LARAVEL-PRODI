@@ -9,18 +9,10 @@ use App\Support\ImporCsv;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-/**
- * DATA MASTER DOSEN — dikelola Staff Prodi.
- *
- * REVISI 26-09-2026: Dosen BUKAN lagi role/akun pengguna. Tidak ada akun login,
- * password, maupun dashboard Dosen. Data dosen ditampilkan pada Profil Program
- * Studi (Dosen Pengajar) dan dapat dipakai pada Struktur Organisasi.
- */
 class DosenController extends Controller
 {
     use MengimporCsv;
 
-    /** Kolom CSV impor dosen (urutan template). REVISI 28-09-2026 tahap 2. */
     public const KOLOM_CSV = ['nuptk', 'nama', 'pendidikan_terakhir', 'email', 'google_scholar', 'alamat', 'tanggal_lahir', 'status'];
 
     public function index(Request $request)
@@ -67,23 +59,18 @@ class DosenController extends Controller
     public function destroy(Dosen $dosen)
     {
         $nama = $dosen->nama;
-        $dosen->delete(); // struktur_organisasi.dosen_id (-> dosen.nuptk) menjadi null (nullOnDelete)
+        $dosen->delete();
 
         return redirect()
             ->route('staff-dosen')
             ->with('success', 'Data dosen '.$nama.' berhasil dihapus.');
     }
 
-    /** Unduh template CSV dosen. */
     public function template()
     {
         return ImporCsv::template('template-dosen.csv', self::KOLOM_CSV);
     }
 
-    /**
-     * Impor CSV Data Master Dosen (REVISI 28-09-2026 tahap 2). Aturan validasi sama dengan form.
-     * NUPTK yang sudah terdaftar dilewati (bawaan) atau diperbarui. Foto diisi lewat form Edit.
-     */
     public function impor(Request $request)
     {
         return $this->prosesImporCsv($request, [
@@ -122,7 +109,6 @@ class DosenController extends Controller
         return $data;
     }
 
-    /** Aturan data dosen (dipakai form dan impor CSV). */
     private function aturan(?Dosen $dosen = null): array
     {
         return [
@@ -133,7 +119,6 @@ class DosenController extends Controller
             'nama' => ['required', 'string', 'max:150'],
             'pendidikan_terakhir' => ['nullable', 'string', 'max:255'],
             'google_scholar' => ['nullable', 'url', 'max:255'],
-            // Satu field email (data kontak dosen, bukan akun login), domain @politala.ac.id.
             'email' => [
                 'nullable', 'email', 'max:150',
                 function (string $attribute, mixed $value, \Closure $fail) {
@@ -145,7 +130,6 @@ class DosenController extends Controller
             ],
             'alamat' => ['nullable', 'string', 'max:255'],
             'tanggal_lahir' => ['nullable', 'date', 'before:today'],
-            // REVISI 28-09-2026: Aktif / Pendidikan (studi lanjut) / Nonaktif.
             'status' => ['required', Rule::in(array_keys(Dosen::LABEL_STATUS))],
         ];
     }

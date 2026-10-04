@@ -8,19 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 
-/**
- * LOGIN DENGAN GOOGLE (REVISI 26-09-2026) — Google OAuth 2.0 via Laravel Socialite.
- *
- * Kredensial TIDAK ditulis di kode; diambil dari .env melalui config/services.php:
- *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
- * Selama paket laravel/socialite belum terpasang atau kredensial masih kosong,
- * tombol tetap tampil tetapi pengguna dikembalikan ke halaman login dengan pesan yang jelas.
- */
 class GoogleAuthController extends Controller
 {
     public function __construct(private readonly GoogleLoginService $google) {}
 
-    /** Langkah 1: arahkan pengguna ke halaman persetujuan Google. */
     public function redirect()
     {
         if ($pesan = $this->belumSiap()) {
@@ -34,7 +25,6 @@ class GoogleAuthController extends Controller
             ->redirect();
     }
 
-    /** Langkah 2: Google mengembalikan pengguna ke /auth/google/callback. */
     public function callback(Request $request)
     {
         if ($pesan = $this->belumSiap()) {
@@ -68,7 +58,6 @@ class GoogleAuthController extends Controller
         return redirect()->intended(route($user->role === 'staff' ? 'staff-dashboard' : 'mahasiswa-dashboard'));
     }
 
-    /** Pesan bila integrasi belum dapat dipakai; null bila siap. */
     private function belumSiap(): ?string
     {
         if (! class_exists(Socialite::class)) {
@@ -89,6 +78,6 @@ class GoogleAuthController extends Controller
 
     private function kembali(string $pesan)
     {
-        return redirect()->route('login')->withErrors(['email' => $pesan]);
+        return redirect()->route('login')->withErrors(['email' => __($pesan)]);
     }
 }

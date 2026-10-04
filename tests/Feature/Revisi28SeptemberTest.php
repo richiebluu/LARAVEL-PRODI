@@ -12,7 +12,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-/** Uji revisi 28 September 2026 (dokumen "REVISI BARU.docx"). */
 class Revisi28SeptemberTest extends TestCase
 {
     use RefreshDatabase;
@@ -32,24 +31,23 @@ class Revisi28SeptemberTest extends TestCase
     public function test_struktur_database(): void
     {
         $this->assertTrue(Schema::hasTable('prospek_lulusan'));
-        foreach (['nama', 'kategori', 'ikon', 'deskripsi', 'status', 'staff_prodi_id'] as $k) {
+        foreach (['nama', 'ikon', 'deskripsi', 'status', 'staff_prodi_id'] as $k) {
             $this->assertTrue(Schema::hasColumn('prospek_lulusan', $k), $k);
         }
-        // ERD: tidak ada kolom urutan.
+        $this->assertFalse(Schema::hasColumn('prospek_lulusan', 'kategori'));
         $this->assertFalse(Schema::hasColumn('prospek_lulusan', 'urutan'));
         $this->assertFalse(Schema::hasColumn('program_studi', 'prospek_kerja'));
         $this->assertFalse(Schema::hasColumn('dosen', 'jabatan'));
-        // ERD: DOSEN tidak memiliki kolom keterangan_status; PK = nuptk.
         $this->assertFalse(Schema::hasColumn('dosen', 'keterangan_status'));
         $this->assertFalse(Schema::hasColumn('dosen', 'id'));
-        foreach (['kode', 'nama', 'semester', 'sks', 'jenis'] as $k) {
+        foreach (['kode_mata_kuliah', 'nama', 'semester', 'sks', 'jenis'] as $k) {
             $this->assertTrue(Schema::hasColumn('mata_kuliah', $k), $k);
         }
     }
 
     public function test_halaman_staff_hanya_untuk_staff(): void
     {
-        foreach (['/staff-prospek-lulusan', '/staff-kurikulum'] as $url) {
+        foreach (['/staff-prospek-lulusan', '/staff-mata-kuliah'] as $url) {
             $this->get($url)->assertRedirect(route('login'));
             $this->actingAs($this->mahasiswa())->get($url)->assertRedirect(route('mahasiswa-dashboard'));
             $this->actingAs($this->staff())->get($url)->assertOk();
@@ -64,32 +62,39 @@ class Revisi28SeptemberTest extends TestCase
         $this->actingAs($this->staff());
 
         $halaman = $this->get('/staff-prospek-lulusan')->assertOk();
-        $halaman->assertSee('Tambah Prospek Lulusan')->assertSee('name="ikon"', false)->assertSee('data-pratinjau-ikon', false);
-        foreach (ProspekLulusan::IKON as $label) {
-            $halaman->assertSee($label);
+        $halaman->assertSee('Tambah Prospek Lulusan')->assertSee('Nama Prospek Lulusan')->assertSee('name="ikon"', false)
+            ->assertSee('data-pratinjau-ikon', false)->assertSee('Deskripsi Singkat')->assertSee('name="status"', false)
+            ->assertDontSee('name="kategori"', false)->assertDontSee('<select name="nama"', false)->assertDontSee('<select name="ikon"', false);
+        foreach (array_keys(ProspekLulusan::IKON) as $kelas) {
+            $halaman->assertSee('data-ikon="'.$kelas.'"', false);
         }
         $this->get('/staff-dashboard')->assertSee('/staff-prospek-lulusan', false);
 
-        $this->post('/staff-prospek-lulusan', ['nama' => 'Web Developer', 'kategori' => 'Software', 'ikon' => 'fa-bukan-ikon', 'status' => 'aktif'])
+        $this->post('/staff-prospek-lulusan', ['nama' => 'Web Developer', 'ikon' => 'bukan ikon <x>', 'status' => 'aktif'])
             ->assertSessionHasErrors('ikon');
-        $this->post('/staff-prospek-lulusan', ['kategori' => 'Software', 'ikon' => 'fa-code', 'status' => 'aktif'])
+        $this->post('/staff-prospek-lulusan', ['ikon' => 'fa-code', 'status' => 'aktif'])
             ->assertSessionHasErrors('nama');
-        $this->post('/staff-prospek-lulusan', ['nama' => 'Web Developer', 'kategori' => 'Pengembangan Perangkat Lunak', 'ikon' => 'fa-laptop-code',
+        $this->post('/staff-prospek-lulusan', ['nama' => 'Web Developer', 'ikon' => 'fa-laptop-code',
             'deskripsi' => 'Membangun aplikasi berbasis web.', 'status' => 'aktif'])->assertSessionHasNoErrors();
-        $this->post('/staff-prospek-lulusan', ['nama' => 'Network Engineer', 'kategori' => 'Jaringan', 'ikon' => 'fa-network-wired', 'status' => 'aktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-prospek-lulusan', ['nama' => 'Cloud Engineer', 'ikon' => 'fa-cloud', 'status' => 'aktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-prospek-lulusan', ['nama' => 'Python Developer', 'ikon' => 'fab fa-python', 'status' => 'aktif'])->assertSessionHasErrors('ikon');
+        $lama = ProspekLulusan::create(['nama' => 'Python Developer', 'ikon' => 'fa-brands fa-python', 'status' => 'aktif']);
+        $this->put('/staff-prospek-lulusan/'.$lama->id_prospek_lulusan, ['nama' => 'Python Developer', 'ikon' => 'fa-brands fa-python', 'status' => 'aktif'])->assertSessionHasNoErrors();
 
         $p = ProspekLulusan::where('nama', 'Web Developer')->firstOrFail();
         $this->assertSame('fa-laptop-code', $p->ikon);
+        $this->assertSame('fa-cloud', ProspekLulusan::where('nama', 'Cloud Engineer')->value('ikon'));
+        $this->assertSame('fa-brands fa-python', ProspekLulusan::where('nama', 'Python Developer')->value('ikon'));
 
-        // Publik: card ta-card (sama dengan Lowongan Kerja) + ikon + filter kategori.
         $html = $this->get('/prospek-lulusan')->assertOk()->getContent();
         $this->assertStringContainsString('card ta-card', $html);
-        $this->assertStringContainsString('fa-laptop-code', $html);
+        $this->assertStringContainsString('fa-solid fa-laptop-code', $html);
+        $this->assertStringContainsString('fa-solid fa-cloud', $html);
+        $this->assertStringContainsString('fa-brands fa-python', $html);
         $this->assertStringContainsString('Membangun aplikasi berbasis web.', $html);
-        $this->get('/prospek-lulusan?kategori=Jaringan')->assertSee('Network Engineer')->assertDontSee('Web Developer');
+        $this->assertStringNotContainsString('?kategori=', $html);
 
-        // Edit: ganti ikon lewat dropdown, lalu nonaktifkan.
-        $this->put('/staff-prospek-lulusan/'.$p->id_prospek_lulusan, ['nama' => 'Web Developer', 'kategori' => 'Pengembangan Perangkat Lunak', 'ikon' => 'fa-code', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
+        $this->put('/staff-prospek-lulusan/'.$p->id_prospek_lulusan, ['nama' => 'Web Developer', 'ikon' => 'fa-solid fa-code', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
         $this->assertSame('fa-code', $p->fresh()->ikon);
         $this->get('/prospek-lulusan')->assertDontSee('Web Developer');
         $this->get('/staff-prospek-lulusan')->assertSee('Web Developer')->assertSee('modalDetailProspek'.$p->id_prospek_lulusan, false);
@@ -97,7 +102,6 @@ class Revisi28SeptemberTest extends TestCase
         $this->delete('/staff-prospek-lulusan/'.$p->id_prospek_lulusan)->assertSessionHasNoErrors();
         $this->assertDatabaseMissing('prospek_lulusan', ['id_prospek_lulusan' => $p->id_prospek_lulusan]);
 
-        // Form Profil Prodi tidak lagi punya textarea prospek.
         $this->get('/staff-profil')->assertDontSee('name="prospek_kerja"', false)->assertSee('/staff-prospek-lulusan', false);
     }
 
@@ -124,55 +128,51 @@ class Revisi28SeptemberTest extends TestCase
         $this->get('/profil')->assertSee('status-pendidikan', false);
     }
 
-    public function test_crud_dan_impor_kurikulum(): void
+    public function test_crud_dan_impor_mata_kuliah(): void
     {
-        $this->get('/kurikulum')->assertOk()->assertSee('Data kurikulum belum diisi');
-        $this->get('/')->assertSee('/kurikulum', false);
+        $this->get('/kurikulum')->assertRedirect('/mata-kuliah');
+        $this->get('/mata-kuliah')->assertOk()->assertSee('Data mata kuliah belum diisi')->assertDontSee('Kurikulum');
+        $this->get('/')->assertSee('/mata-kuliah', false)->assertDontSee('>Kurikulum<', false);
 
         $this->actingAs($this->staff());
-        $this->post('/staff-kurikulum', ['kode' => 'TI 101', 'nama' => 'X', 'semester' => 1, 'sks' => 2, 'jenis' => 'Wajib'])->assertSessionHasErrors('kode');
-        $this->post('/staff-kurikulum', ['kode' => 'ti101', 'nama' => 'Algoritma dan Pemrograman', 'semester' => 1, 'sks' => 3, 'jenis' => 'Wajib'])->assertSessionHasNoErrors();
-        $this->post('/staff-kurikulum', ['kode' => 'TI101', 'nama' => 'Duplikat', 'semester' => 1, 'sks' => 3, 'jenis' => 'Wajib'])->assertSessionHasErrors('kode');
-        $this->post('/staff-kurikulum', ['kode' => 'TI999', 'nama' => 'X', 'semester' => 9, 'sks' => 3, 'jenis' => 'Bebas'])->assertSessionHasErrors(['semester', 'jenis']);
+        $this->post('/staff-mata-kuliah', ['kode' => 'TI 101', 'nama' => 'X', 'semester' => 1, 'sks' => 2, 'jenis' => 'Wajib'])->assertSessionHasErrors('kode');
+        $this->post('/staff-mata-kuliah', ['kode' => 'ti101', 'nama' => 'Algoritma dan Pemrograman', 'semester' => 1, 'sks' => 3, 'jenis' => 'Wajib'])->assertSessionHasNoErrors();
+        $this->post('/staff-mata-kuliah', ['kode' => 'TI101', 'nama' => 'Duplikat', 'semester' => 1, 'sks' => 3, 'jenis' => 'Wajib'])->assertSessionHasErrors('kode');
+        $this->post('/staff-mata-kuliah', ['kode' => 'TI999', 'nama' => 'X', 'semester' => 9, 'sks' => 3, 'jenis' => 'Bebas'])->assertSessionHasErrors(['semester', 'jenis']);
 
-        $mk = MataKuliah::where('kode', 'TI101')->firstOrFail();
-        $this->put('/staff-kurikulum/'.$mk->id, ['kode' => 'TI101', 'nama' => 'Algoritma & Pemrograman', 'semester' => 1, 'sks' => 4, 'jenis' => 'Wajib'])->assertSessionHasNoErrors();
+        $mk = MataKuliah::findOrFail('TI101');
+        $this->put('/staff-mata-kuliah/'.$mk->kode_mata_kuliah, ['kode' => 'TI101', 'nama' => 'Algoritma & Pemrograman', 'semester' => 1, 'sks' => 4, 'jenis' => 'Wajib'])->assertSessionHasNoErrors();
         $this->assertSame(4, $mk->fresh()->sks);
 
-        // Impor CSV (pemisah titik koma, jenis huruf kecil): TI101 diperbarui, 2 baru.
-        // REVISI 28-09-2026 tahap 2: data yang sudah ada diperbarui hanya bila dipilih "perbarui".
         $csv = "kode;nama;semester;sks;jenis\nTI101;Algoritma dan Pemrograman;1;3;wajib\nTI201;Basis Data;2;3;Wajib\nTI501;Machine Learning;5;2;Pilihan\n";
-        $this->post('/staff-kurikulum/impor', ['berkas' => UploadedFile::fake()->createWithContent('kurikulum.csv', $csv), 'duplikat' => 'perbarui'])
+        $this->post('/staff-mata-kuliah/impor', ['berkas' => UploadedFile::fake()->createWithContent('mata-kuliah.csv', $csv), 'duplikat' => 'perbarui'])
             ->assertSessionHasNoErrors()->assertSessionHas('success', 'Impor selesai: 2 mata kuliah ditambahkan, 1 diperbarui.');
         $this->assertSame(3, MataKuliah::count());
 
-        // Baris salah -> seluruh impor dibatalkan.
         $salah = "kode,nama,semester,sks,jenis\nTI301,Jaringan,3,3,Wajib\nTI302,,3,3,Wajib\n";
-        $this->post('/staff-kurikulum/impor', ['berkas' => UploadedFile::fake()->createWithContent('salah.csv', $salah)])->assertSessionHasErrors('berkas');
-        $this->assertDatabaseMissing('mata_kuliah', ['kode' => 'TI301']);
+        $this->post('/staff-mata-kuliah/impor', ['berkas' => UploadedFile::fake()->createWithContent('salah.csv', $salah)])->assertSessionHasErrors('berkas');
+        $this->assertDatabaseMissing('mata_kuliah', ['kode_mata_kuliah' => 'TI301']);
 
-        $this->get('/staff-kurikulum/template')->assertOk()->assertSee('kode,nama,semester,sks,jenis');
+        $this->get('/staff-mata-kuliah/template')->assertOk()->assertSee('kode,nama,semester,sks,jenis');
 
-        $html = $this->get('/kurikulum')->assertOk()->getContent();
+        $html = $this->get('/mata-kuliah')->assertOk()->getContent();
         foreach (['Semester 1', 'Semester 2', 'Semester 5', 'TI201', 'Basis Data', 'Machine Learning', 'Pilihan', '8 SKS'] as $t) {
             $this->assertStringContainsString($t, $html, $t);
         }
-        $this->get('/kurikulum?semester=2')->assertSee('Basis Data')->assertDontSee('Machine Learning');
+        $this->get('/mata-kuliah?semester=2')->assertSee('Basis Data')->assertDontSee('Machine Learning');
 
-        $this->delete('/staff-kurikulum/'.$mk->id)->assertSessionHasNoErrors();
-        $this->assertDatabaseMissing('mata_kuliah', ['id' => $mk->id]);
+        $this->delete('/staff-mata-kuliah/'.$mk->kode_mata_kuliah)->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('mata_kuliah', ['kode_mata_kuliah' => 'TI101']);
     }
 
-    /** REVISI 28-09-2026 tahap 2: navbar kembali Capital Each Word (aturan uppercase dihapus). */
     public function test_navbar_capital_each_word_dan_kurikulum_di_profil(): void
     {
         $html = $this->get('/')->getContent();
-        $this->assertMatchesRegularExpression('#<a href="[^"]*/dosen">Dosen Pengajar</a>\s*<a href="[^"]*/kurikulum">Kurikulum</a>#', $html);
+        $this->assertMatchesRegularExpression('#<a href="[^"]*/dosen">Dosen Pengajar</a>\s*<a href="[^"]*/mata-kuliah">Mata Kuliah</a>#', $html);
         $css = file_get_contents(public_path('css/app.css'));
         $this->assertStringNotContainsString('.navbar .nav-menu .dropdown a { text-transform: uppercase; }', $css);
     }
 
-    /** REVISI 28-09-2026 tahap 2: PDF Kode Etik tampil penuh (lembar selebar area baca), bukan buku. */
     public function test_kode_etik_pdf_ukuran_penuh(): void
     {
         ProgramStudi::query()->updateOrCreate([], ['nama_prodi' => 'Teknologi Informasi', 'kode_etik' => 'kode-etik/contoh.pdf']);

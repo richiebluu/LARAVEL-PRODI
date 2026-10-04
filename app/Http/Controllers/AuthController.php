@@ -10,7 +10,6 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /** Halaman login. Jika sudah login, langsung ke dashboard sesuai role. */
     public function showLogin()
     {
         if (Auth::check()) {
@@ -20,16 +19,6 @@ class AuthController extends Controller
         return view('login');
     }
 
-    /**
-     * Proses login memakai session/authentication Laravel.
-     *
-     * REVISI 24-09-2026 (diperbarui 26-09-2026: role Dosen ditiadakan):
-     *  1. Pengguna memilih jenis akun (Mahasiswa / Staff Prodi).
-     *  2. Email wajib memakai domain institusi Politala sesuai role
-     *     (config/auth.php -> domain_email).
-     *  3. Role akun di database harus sama dengan role yang dipilih.
-     * Akses dashboard tetap dijaga middleware role (EnsureRole) di backend.
-     */
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -37,20 +26,20 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ], [
-            'role.required' => 'Silakan pilih jenis akun (Mahasiswa atau Staff Prodi).',
-            'role.in' => 'Jenis akun tidak dikenali.',
+            'role.required' => __('Silakan pilih jenis akun (Mahasiswa atau Staff Prodi).'),
+            'role.in' => __('Jenis akun tidak dikenali.'),
         ], [
-            'role' => 'Jenis akun',
+            'role' => __('Jenis akun'),
             'email' => 'Email',
             'password' => 'Password',
         ]);
 
         $role = $data['role'];
-        $label = User::ROLE[$role];
+        $label = __(User::ROLE[$role]);
 
         if (! User::emailSesuaiRole($data['email'], $role)) {
             throw ValidationException::withMessages([
-                'email' => 'Akun '.$label.' wajib memakai email institusi @'.User::domainEmail($role).'.',
+                'email' => __('Akun :akun wajib memakai email institusi @:domain.', ['akun' => $label, 'domain' => User::domainEmail($role)]),
             ]);
         }
 
@@ -58,7 +47,7 @@ class AuthController extends Controller
 
         if (! Auth::attempt(['email' => $data['email'], 'password' => $data['password']], $remember)) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau password tidak sesuai.',
+                'email' => __('Email atau password tidak sesuai.'),
             ]);
         }
 
@@ -70,7 +59,7 @@ class AuthController extends Controller
             $request->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'email' => 'Akun ini bukan akun '.$label.'. Silakan pilih jenis akun yang sesuai.',
+                'email' => __('Akun ini bukan akun :akun. Silakan pilih jenis akun yang sesuai.', ['akun' => $label]),
             ]);
         }
 
@@ -79,7 +68,6 @@ class AuthController extends Controller
         return redirect()->intended(route($this->rute($user->role)));
     }
 
-    /** Logout dan hancurkan session. */
     public function logout(Request $request)
     {
         Auth::logout();

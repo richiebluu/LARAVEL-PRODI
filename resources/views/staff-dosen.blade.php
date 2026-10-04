@@ -12,9 +12,11 @@
 <body data-page="staff-dosen">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -54,10 +56,12 @@
               <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="crudSearch" name="q" value="{{ $cari }}" placeholder="Cari nama / NUPTK..."></div>
             </form>
             <button class="btn btn-outline" data-modal-open="modalImporDosen"><i class="fa-solid fa-file-import"></i> Impor CSV</button>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahDosen"><i class="fa-solid fa-plus"></i> Tambah Dosen</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Foto</th><th>Dosen</th><th>NUPTK</th><th>Status</th><th>Google Scholar</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
@@ -117,6 +121,7 @@
       </div>
 
       @foreach ($daftarDosen as $d)
+        {{-- Modal Detail Dosen --}}
         <div class="modal-overlay" id="modalDetailDsn{{ $d->nuptk }}">
           <div class="modal-box">
             <div class="modal-head"><h3>Detail Dosen</h3>
@@ -148,6 +153,7 @@
         </div>
       @endforeach
 
+      {{-- Modal Tambah Dosen --}}
       <div class="modal-overlay" id="modalTambahDosen">
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-dosen.store') }}" enctype="multipart/form-data">
@@ -183,6 +189,7 @@
         </div>
       </div>
 
+      {{-- Modal Edit Data Dosen --}}
       <div class="modal-overlay" id="modalEditDosen">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditDosen" enctype="multipart/form-data">
@@ -219,7 +226,7 @@
         </div>
       </div>
 
-      {{-- REVISI 28-09-2026 tahap 2: Impor CSV Data Master Dosen. --}}
+      {{-- Modal Impor CSV --}}
       @include('partials.impor-csv-modal', [
         'id' => 'modalImporDosen',
         'judul' => 'Impor Data Dosen (CSV)',
@@ -246,7 +253,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

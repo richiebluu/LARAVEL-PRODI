@@ -1,9 +1,6 @@
-/* ==========================================================================
-   PROGRAM STUDI TEKNOLOGI INFORMASI — MAIN SCRIPT (Vanilla JS)
-   ========================================================================== */
+/* Program Studi Teknologi Informasi */
 document.addEventListener('DOMContentLoaded', function () {
-
-  /* ---------- NAVBAR: solid on scroll ---------- */
+  /* Navbar */
   var navbar = document.querySelector('.navbar');
   function handleNavScroll(){
     if(!navbar) return;
@@ -13,26 +10,53 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('scroll', handleNavScroll);
   handleNavScroll();
 
-  /* ---------- HAMBURGER / MOBILE MENU ---------- */
+  /* Hamburger / Mobile Menu */
   var hamburger = document.querySelector('.hamburger');
   if(hamburger && navbar){
     hamburger.addEventListener('click', function(){
       navbar.classList.toggle('mobile-open');
     });
   }
-  // Mobile dropdown toggle (tap to expand submenu)
   document.querySelectorAll('.nav-item').forEach(function(item){
     var link = item.querySelector('.nav-link');
     if(!link) return;
+    var punyaDropdown = !!item.querySelector('.dropdown');
+    var bukaTutup = function(){
+      var buka = item.classList.toggle('open');
+      if(link.hasAttribute('aria-expanded')) link.setAttribute('aria-expanded', buka ? 'true' : 'false');
+      document.querySelectorAll('.nav-item.open').forEach(function(lain){
+        if(lain !== item){
+          lain.classList.remove('open');
+          var l = lain.querySelector('.nav-link[aria-expanded]');
+          if(l) l.setAttribute('aria-expanded', 'false');
+        }
+      });
+    };
     link.addEventListener('click', function(e){
-      if(window.innerWidth <= 1100 && item.querySelector('.dropdown')){
+      if(punyaDropdown && (window.innerWidth <= 1100 || !link.getAttribute('href'))){
         e.preventDefault();
-        item.classList.toggle('open');
+        bukaTutup();
+      }
+    });
+    link.addEventListener('keydown', function(e){
+      if(punyaDropdown && (e.key === 'Enter' || e.key === ' ')){
+        e.preventDefault();
+        bukaTutup();
+      } else if(e.key === 'Escape'){
+        item.classList.remove('open');
+        if(link.hasAttribute('aria-expanded')) link.setAttribute('aria-expanded', 'false');
       }
     });
   });
+  document.addEventListener('click', function(e){
+    if(e.target.closest && e.target.closest('.nav-item')) return;
+    document.querySelectorAll('.nav-item.open').forEach(function(item){
+      item.classList.remove('open');
+      var l = item.querySelector('.nav-link[aria-expanded]');
+      if(l) l.setAttribute('aria-expanded', 'false');
+    });
+  });
 
-  /* ---------- ACTIVE NAV LINK based on <body data-nav="..."> ---------- */
   var activeGroup = document.body.getAttribute('data-nav');
   if(activeGroup){
     document.querySelectorAll('.nav-link[data-group="' + activeGroup + '"]').forEach(function(el){
@@ -40,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* ---------- HERO SLIDER ---------- */
+  /* Hero Slider */
   (function(){
     var heroSlider = document.querySelector('.hero-slider');
     var slides = document.querySelectorAll('.hero-slide');
@@ -83,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
       btn.addEventListener('click', function(){ if(i !== current){ showSlide(i); } restart(); });
     });
 
-    /* Pause while user is actively engaging with the slider */
     function pauseForInteraction(){ userPaused = true; heroSlider.classList.add('is-paused'); stop(); }
     function resumeInteraction(){ userPaused = false; heroSlider.classList.remove('is-paused'); play(); }
 
@@ -94,18 +117,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if(!heroSlider.contains(e.relatedTarget)) resumeInteraction();
     });
 
-    /* Pause when the browser tab isn't active */
     document.addEventListener('visibilitychange', function(){
       if(document.hidden){ stop(); } else { play(); }
     });
 
-    /* Keyboard navigation while focus is inside the slider */
     heroSlider.addEventListener('keydown', function(e){
       if(e.key === 'ArrowRight'){ nextSlide(); restart(); }
       else if(e.key === 'ArrowLeft'){ prevSlide(); restart(); }
     });
 
-    /* Touch swipe (mobile) */
     var touchStartX = null;
     heroSlider.addEventListener('touchstart', function(e){
       touchStartX = e.touches[0].clientX;
@@ -119,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function () {
       restart();
     }, { passive:true });
 
-    /* Subtle cursor-follow glow — desktop/fine-pointer only, respects reduced motion */
     var glow = heroSlider.querySelector('.hero-cursor-glow');
     if(glow && finePointer && !reduceMotion){
       var targetX = 0, targetY = 0, curX = 0, curY = 0;
@@ -145,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
     play();
   })();
 
-  /* ---------- SCROLL REVEAL (IntersectionObserver) ---------- */
+  /* Scroll Reveal */
   var revealEls = document.querySelectorAll('.reveal');
   if('IntersectionObserver' in window && revealEls.length){
     var io = new IntersectionObserver(function(entries){
@@ -164,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
     revealEls.forEach(function(el){ el.classList.add('in-view'); });
   }
 
-  /* ---------- ANIMATED COUNTER ---------- */
+  /* Animated Counter */
   var counters = document.querySelectorAll('[data-counter]');
   if('IntersectionObserver' in window && counters.length){
     var counterIO = new IntersectionObserver(function(entries){
@@ -191,7 +210,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     requestAnimationFrame(step);
   }
-  // Special-case counters without the '+' suffix (e.g. jumlah dosen tetap)
   document.querySelectorAll('[data-counter-plain]').forEach(function(el){
     var target = parseInt(el.getAttribute('data-counter-plain'), 10) || 0;
     if('IntersectionObserver' in window){
@@ -215,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  /* ---------- BACK TO TOP ---------- */
+  /* Back To Top */
   var backToTop = document.querySelector('.back-to-top');
   if(backToTop){
     window.addEventListener('scroll', function(){
@@ -226,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* ---------- FILTER BUTTONS (Mahasiswa Berprestasi / Tugas Akhir) ---------- */
+  /* Filter Buttons */
   document.querySelectorAll('.filter-bar').forEach(function(bar){
     var targetSelector = bar.getAttribute('data-target');
     bar.querySelectorAll('.filter-btn').forEach(function(btn){
@@ -234,7 +252,6 @@ document.addEventListener('DOMContentLoaded', function () {
         bar.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         var filter = btn.getAttribute('data-filter');
-        // Re-query on every click so items added dynamically (e.g. from admin data) are included too.
         var items = targetSelector ? document.querySelectorAll(targetSelector) : [];
         items.forEach(function(item){
           var cat = item.getAttribute('data-category') || '';
@@ -244,10 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ---------- SIMPLE SEARCH (Tugas Akhir) ---------- */
-  /* Pencarian realtime pada daftar/tabel (REVISI 28-09-2026 tahap 2: mendukung lebih dari satu
-     kolom cari per halaman, pesan "tidak ditemukan" lewat data-search-empty, dan tabel per
-     semester Kurikulum yang ikut disembunyikan bila semua barisnya tidak cocok). */
+  /* Simple Search */
   document.querySelectorAll('[data-search-target]').forEach(function(searchInput){
     var searchTargets = document.querySelectorAll(searchInput.getAttribute('data-search-target'));
     var kosong = searchInput.getAttribute('data-search-empty') ? document.querySelector(searchInput.getAttribute('data-search-empty')) : null;
@@ -269,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (searchInput.value) saring();
   });
 
-  /* ---------- ACCORDION ---------- */
+  /* Accordion */
   document.querySelectorAll('.accordion-head').forEach(function(head){
     head.addEventListener('click', function(){
       var item = head.parentElement;
@@ -279,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ---------- MODAL (Dosen detail) ---------- */
+  /* Modal */
   document.querySelectorAll('[data-modal-open]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var modal = document.getElementById(btn.getAttribute('data-modal-open'));
@@ -296,17 +310,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if(e.target === overlay) overlay.classList.remove('show');
     });
   });
-  // Tautan "Lihat Profil" dari beranda (/dosen#modalDosenX) langsung membuka detail dosen.
   if(location.hash && location.hash.indexOf('#modalDosen') === 0){
     var modalHash = document.getElementById(location.hash.substring(1));
     if(modalHash && modalHash.classList.contains('modal-overlay')) modalHash.classList.add('show');
   }
-
 });
 
-/* ==========================================================================
-   SEARCH PANEL — pencarian konten website (client-side, tanpa backend)
-   ========================================================================== */
+/* Search Panel */
 var SITE_SEARCH_INDEX = [
   { title:"Beranda", desc:"Halaman utama website Program Studi Teknologi Informasi", url:"/", keywords:["beranda","home","utama"], icon:"fa-house" },
   { title:"Tentang Program Studi", desc:"Profil, statistik, akreditasi, struktur organisasi, dan dosen pengajar Prodi TI", url:"/profil", keywords:["profil","profil prodi","tentang","pengenalan"], icon:"fa-building-columns" },
@@ -315,22 +325,48 @@ var SITE_SEARCH_INDEX = [
   { title:"Struktur Organisasi", desc:"Koordinator Program Studi, Koordinator Gugus, dan pengelola Prodi", url:"/struktur-organisasi", keywords:["struktur","organisasi","koordinator","kaprodi","gugus"], icon:"fa-sitemap" },
   { title:"Dosen Pengajar", desc:"Tenaga pengajar Program Studi Teknologi Informasi", url:"/dosen", keywords:["dosen","pengajar","lecturer","google scholar","publikasi"], icon:"fa-chalkboard-user" },
   { title:"Sarana & Prasarana", desc:"Laboratorium, ruang kuliah, dan fasilitas pendukung Program Studi Teknologi Informasi", url:"/sarana-prasarana", keywords:["sarana","prasarana","fasilitas","laboratorium","lab","ruang","gedung"], icon:"fa-flask" },
-  { title:"Kegiatan Mahasiswa", desc:"Kegiatan mahasiswa Program Studi Teknologi Informasi: seminar, lomba, pengabdian, kunjungan industri", url:"/kegiatan-mahasiswa", keywords:["kegiatan","mahasiswa","seminar","workshop","lomba","pengabdian","kunjungan","organisasi"], icon:"fa-people-group" },
-  { title:"Kurikulum", desc:"Daftar mata kuliah Program Studi (kode, nama, semester, SKS, jenis) sesuai SIPADU", url:"/kurikulum", keywords:["kurikulum","mata kuliah","matkul","sks","semester","sipadu"], icon:"fa-book-open" },
+  { title:"Mata Kuliah", desc:"Daftar mata kuliah Program Studi (kode, nama, semester, SKS, jenis) sesuai SIPADU", url:"/mata-kuliah", keywords:["mata kuliah","matkul","kurikulum","sks","semester","sipadu"], icon:"fa-book-open" },
   { title:"Prospek Lulusan", desc:"Peluang karier digital bagi lulusan Teknologi Informasi", url:"/prospek-lulusan", keywords:["prospek","lulusan","karier","karir","prospek lulusan"], icon:"fa-briefcase" },
   { title:"Mahasiswa Berprestasi", desc:"Mahasiswa berprestasi Program Studi Teknologi Informasi", url:"/mahasiswa-berprestasi", keywords:["mahasiswa berprestasi","prestasi","berprestasi","juara","prestasi akademik","prestasi non-akademik","keaktifan organisasi","ipk","mahasiswa"], icon:"fa-medal" },
   { title:"Ranking Mahasiswa", desc:"Peringkat SAW: Nilai Akademik, Prestasi Akademik, Prestasi Non-Akademik, Keaktifan Organisasi", url:"/ranking", keywords:["ranking","peringkat","top 3","skor","saw","bobot","nilai akademik","prestasi akademik","prestasi non-akademik","keaktifan organisasi"], icon:"fa-ranking-star" },
   { title:"Testimoni Alumni", desc:"Cerita alumni Program Studi Teknologi Informasi", url:"/testimoni", keywords:["testimoni","alumni","cerita","perusahaan"], icon:"fa-comment-dots" },
   { title:"Lowongan Kerja", desc:"Informasi lowongan kerja dan magang", url:"/lowongan-pekerjaan", keywords:["lowongan","pekerjaan","kerja","magang","karier","loker"], icon:"fa-briefcase" },
-  { title:"Berita", desc:"Informasi: kegiatan dan berita terbaru Program Studi", url:"/berita", keywords:["berita","kegiatan","informasi","news"], icon:"fa-newspaper" },
+  { title:"Berita", desc:"Informasi: berita Program Studi dan kegiatan mahasiswa (seminar, lomba, pengabdian, kunjungan industri)", url:"/berita", keywords:["berita","kegiatan","kegiatan mahasiswa","seminar","workshop","lomba","pengabdian","kunjungan","informasi","news"], icon:"fa-newspaper" },
   { title:"AKAMAWA", desc:"Informasi: Layanan Akademik dan Kemahasiswaan Politala", url:"/akamawa", keywords:["informasi","akamawa","layanan","beasiswa","dispensasi","legalisir"], icon:"fa-building-columns" },
   { title:"Kode Etik Mahasiswa", desc:"Informasi: dokumen Kode Etik Mahasiswa (PDF dibaca langsung di website)", url:"/kode-etik", keywords:["informasi","kode etik","etik","pdf","aturan","dokumen"], icon:"fa-book-open" },
   { title:"Pengumuman", desc:"Pengumuman untuk mahasiswa berprestasi (dikirim via email & dashboard)", url:"/pengumuman", keywords:["pengumuman","announcement"], icon:"fa-bullhorn" },
   { title:"Login Sistem", desc:"Masuk sebagai Mahasiswa atau Staff Prodi (termasuk Login dengan Google)", url:"/login", keywords:["login","masuk","dashboard","mahasiswa","staff","google"], icon:"fa-right-to-bracket" }
 ];
 
-document.addEventListener('DOMContentLoaded', function () {
+var SITE_SEARCH_EN = {
+  "/": ["Home", "Main page of the Information Technology Study Program website", ["home", "main"]],
+  "/profil": ["About the Study Program", "Profile, statistics, accreditation, organizational structure, and lecturers of the IT Program", ["profile", "about", "introduction"]],
+  "/profil#visi-misi": ["Vision & Mission", "Vision and mission of the Information Technology Study Program (About page)", ["vision", "mission"]],
+  "/akreditasi": ["Accreditation", "Accreditation status, rating, and validity period of the IT Program", ["accreditation", "rating", "decree"]],
+  "/struktur-organisasi": ["Organizational Structure", "Study Program Coordinator, Unit Coordinator, and program management", ["structure", "organization", "coordinator"]],
+  "/dosen": ["Lecturers", "Teaching staff of the Information Technology Study Program", ["lecturer", "teacher", "publication"]],
+  "/sarana-prasarana": ["Facilities", "Laboratories, classrooms, and supporting facilities of the Information Technology Study Program", ["facilities", "laboratory", "room", "building"]],
+  "/mata-kuliah": ["Courses", "List of Study Program courses (code, name, semester, credits, type)", ["course", "subject", "curriculum", "credit", "semester"]],
+  "/prospek-lulusan": ["Graduate Prospects", "Digital career opportunities for Information Technology graduates", ["prospect", "graduate", "career", "job"]],
+  "/mahasiswa-berprestasi": ["Outstanding Students", "Outstanding students of the Information Technology Study Program", ["outstanding", "achievement", "student", "award"]],
+  "/ranking": ["Student Ranking", "SAW ranking: Academic Score, Academic Achievement, Non-Academic Achievement, Organizational Activity", ["ranking", "rank", "score", "weight"]],
+  "/testimoni": ["Alumni Testimonials", "Stories from Information Technology alumni", ["testimonial", "alumni", "story", "company"]],
+  "/lowongan-pekerjaan": ["Job Vacancies", "Job and internship vacancies", ["vacancy", "job", "work", "internship", "career"]],
+  "/berita": ["News", "Information: Study Program news and student activities (seminars, competitions, community service, industry visits)", ["news", "activity", "seminar", "workshop", "competition"]],
+  "/akamawa": ["AKAMAWA", "Information: Politala Academic and Student Affairs Services", ["information", "service", "scholarship"]],
+  "/kode-etik": ["Student Code of Conduct", "Information: Student Code of Conduct document (PDF read directly on the website)", ["code of conduct", "ethics", "rules", "document"]],
+  "/pengumuman": ["Announcements", "Announcements for outstanding students (sent via email & dashboard)", ["announcement", "notice"]],
+  "/login": ["System Login", "Sign in as a Student or Program Staff (including Sign in with Google)", ["login", "sign in", "dashboard", "student", "staff"]]
+};
+var SITE_LANG_EN = document.documentElement.lang === 'en';
+if (SITE_LANG_EN) {
+  SITE_SEARCH_INDEX.forEach(function (item) {
+    var t = SITE_SEARCH_EN[item.url];
+    if (t) { item.title = t[0]; item.desc = t[1]; item.keywords = item.keywords.concat(t[2]); }
+  });
+}
 
+document.addEventListener('DOMContentLoaded', function () {
   var searchToggle = document.querySelector('.search-toggle');
   var searchPanel = document.getElementById('searchPanel');
   var searchInput = document.getElementById('searchInput');
@@ -372,16 +408,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var q = query.trim();
     if(!q){
       searchResults.innerHTML =
-        '<div class="search-hint"><i class="fa-solid fa-magnifying-glass"></i>Ketik kata kunci seperti "dosen", "prestasi", atau "project" untuk mencari informasi Prodi TI.</div>';
+        '<div class="search-hint"><i class="fa-solid fa-magnifying-glass"></i>' + (SITE_LANG_EN ? 'Type a keyword such as "lecturer", "achievement", or "project" to search IT Program information.' : 'Ketik kata kunci seperti "dosen", "prestasi", atau "project" untuk mencari informasi Prodi TI.') + '</div>';
       return;
     }
     var results = searchSite(q);
     if(!results || results.length === 0){
       searchResults.innerHTML =
-        '<div class="search-empty"><i class="fa-solid fa-folder-open"></i>Tidak ada hasil yang ditemukan.</div>';
+        '<div class="search-empty"><i class="fa-solid fa-folder-open"></i>' + (SITE_LANG_EN ? 'No results found.' : 'Tidak ada hasil yang ditemukan.') + '</div>';
       return;
     }
-    var html = '<div class="search-results-label">' + results.length + ' HASIL DITEMUKAN</div>';
+    var html = '<div class="search-results-label">' + results.length + (SITE_LANG_EN ? ' RESULTS FOUND' : ' HASIL DITEMUKAN') + '</div>';
     results.forEach(function(item){
       html += '<a class="search-result-item" href="' + item.url + '">' +
         '<div class="search-result-icon"><i class="fa-solid ' + item.icon + '"></i></div>' +
@@ -408,17 +444,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   searchPanel.addEventListener('click', function(e){ e.stopPropagation(); });
 
-  // Tutup search saat menekan ESC
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && searchPanel.classList.contains('show')){
       closeSearch();
     }
   });
-  // Tutup search saat klik di luar panel
   document.addEventListener('click', function(e){
     if(searchPanel.classList.contains('show') && !searchPanel.contains(e.target) && e.target !== searchToggle){
       closeSearch();
     }
   });
-
 });

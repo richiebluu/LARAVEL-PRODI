@@ -8,14 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        /*
-         * MATA_KULIAH (Kurikulum) — TIDAK terdapat pada ERD.
-         * Dipertahankan atas permintaan pemilik project (fitur Profil > Kurikulum
-         * dan CRUD + impor CSV Staff Prodi tetap berjalan). Tabel berdiri sendiri.
-         */
         Schema::create('mata_kuliah', function (Blueprint $table) {
-            $table->id();
-            $table->string('kode', 20)->unique();
+            $table->string('kode_mata_kuliah', 20)->primary();
+            $table->foreignId('program_studi_id')->nullable()->constrained('program_studi', 'id_program_studi')->nullOnDelete();
             $table->string('nama', 150);
             $table->unsignedTinyInteger('semester');
             $table->unsignedTinyInteger('sks');

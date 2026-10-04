@@ -19,7 +19,6 @@ class ProfilController extends Controller
         ]);
     }
 
-    /** Simpan profil Program Studi ke tabel program_studi. */
     public function simpan(Request $request)
     {
         $data = $request->validate([
@@ -29,16 +28,20 @@ class ProfilController extends Controller
             'misi' => ['nullable', 'string'],
             'jumlah_alumni' => ['nullable', 'integer', 'min:0'],
             'jumlah_dosen' => ['nullable', 'integer', 'min:0'],
-            // Menu Informasi: AKAMAWA + PDF Kode Etik Mahasiswa sebagai atribut Profil Prodi.
             'link_akamawa' => ['nullable', 'url', 'max:255'],
             'kode_etik' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
             'hapus_kode_etik' => ['nullable', 'boolean'],
+            'link_media_sosial' => ['nullable', 'array', 'max:10'],
+            'link_media_sosial.*' => ['nullable', 'url:http,https', 'max:255'],
         ], [
             'link_akamawa.url' => 'Link AKAMAWA harus berupa URL lengkap (https://...).',
+            'link_media_sosial.*.url' => 'Link Media Sosial harus berupa URL lengkap (contoh: https://instagram.com/namaprodi).',
+            'link_media_sosial.max' => 'Maksimal 10 link media sosial.',
             'kode_etik.mimes' => 'Berkas Kode Etik harus berformat PDF.',
         ], [
             'nama_prodi' => 'Nama Program Studi',
             'kode_etik' => 'PDF Kode Etik',
+            'link_media_sosial.*' => 'Link Media Sosial',
         ]);
 
         $prodi = ProgramStudi::first();
@@ -58,6 +61,16 @@ class ProfilController extends Controller
         }
         unset($data['hapus_kode_etik']);
 
+        if ($request->has('link_media_sosial')) {
+            $link = collect($data['link_media_sosial'] ?? [])
+                ->map(fn ($url) => trim((string) $url))
+                ->filter()
+                ->unique()
+                ->implode("\n");
+            $data['link_media_sosial'] = $link !== '' ? $link : null;
+        } else {
+            unset($data['link_media_sosial']);
+        }
 
         if ($prodi) {
             $prodi->update($data);
@@ -69,13 +82,6 @@ class ProfilController extends Controller
             ->route('staff-profil')
             ->with('success', 'Profil Program Studi berhasil disimpan.');
     }
-
-    /* ================= PROFIL SAYA (Staff Prodi) — REVISI 24-09-2026 =================
-     * Halaman profil untuk akun Staff Prodi yang sedang login, dengan tampilan yang
-     * sama seperti Profil Saya Dosen & Mahasiswa. Data berasal dari tabel `staff_prodi`
-     * (relasi User -> staffProdi). Staff Prodi adalah verifikator, sehingga
-     * perubahan datanya sendiri langsung disimpan tanpa pengajuan.
-     */
 
     public function profilSaya()
     {
@@ -96,7 +102,6 @@ class ProfilController extends Controller
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:150'],
             'jabatan' => ['nullable', 'string', 'max:100'],
-            // Satu email: email profil = email login.
             'email' => [
                 'required', 'email', 'max:150',
                 Rule::unique('users', 'email')->ignore($user->id_user, 'id_user'),

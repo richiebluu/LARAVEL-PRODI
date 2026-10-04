@@ -17,28 +17,20 @@ class MahasiswaController extends Controller
 {
     use MengimporCsv;
 
-    /** Kolom CSV impor mahasiswa (urutan template). REVISI 28-09-2026 tahap 2. */
     public const KOLOM_CSV = ['nim', 'nama', 'email', 'angkatan', 'kelas', 'no_hp', 'ipk', 'status_mahasiswa', 'password'];
 
-    /** Jumlah baris organisasi pada form (Excel acuan memuat 2 organisasi). */
     public const MAKS_ORGANISASI = 2;
 
-    /**
-     * REVISI DOSEN 01-10-2026: jumlah data per halaman dapat dipilih Staff Prodi.
-     * Default 10 data; pilihan 5 / 10 / 15 / 20 (query parameter ?per_page=).
-     */
     public const PILIHAN_PER_HALAMAN = [5, 10, 15, 20];
     public const PER_HALAMAN_BAWAAN = 10;
 
     public function __construct(private readonly RankingService $ranking) {}
 
-    /** Daftar mahasiswa: search + filter angkatan + jumlah per halaman + pagination Laravel. */
     public function index(Request $request)
     {
         $cari = trim((string) $request->query('q'));
         $angkatan = $request->query('angkatan');
 
-        // Nilai di luar pilihan (mis. ?per_page=1000) dikembalikan ke bawaan 10.
         $perHalaman = (int) $request->query('per_page', self::PER_HALAMAN_BAWAAN);
         if (! in_array($perHalaman, self::PILIHAN_PER_HALAMAN, true)) {
             $perHalaman = self::PER_HALAMAN_BAWAAN;
@@ -54,7 +46,7 @@ class MahasiswaController extends Controller
             ->when($angkatan, fn ($q) => $q->where('angkatan', $angkatan))
             ->orderBy('nama')
             ->paginate($perHalaman)
-            ->withQueryString(); // q, angkatan, per_page ikut terbawa saat pindah halaman
+            ->withQueryString();
 
         $daftarAngkatan = Mahasiswa::query()
             ->whereNotNull('angkatan')
@@ -71,12 +63,11 @@ class MahasiswaController extends Controller
             'pilihanPerHalaman' => self::PILIHAN_PER_HALAMAN,
             'jumlah' => $mahasiswa->total(),
             'daftarJabatan' => Organisasi::daftarJabatan(),
-            'maksOrganisasi' => self::MAKS_ORGANISASI,
+            'maksOrganisasi' => $this->jumlahBarisOrganisasi(),
             'ranking' => $this->ranking,
         ]);
     }
 
-    /** Simpan mahasiswa baru + akun user-nya. */
     public function store(Request $request)
     {
         $data = $this->validasi($request);
@@ -84,7 +75,7 @@ class MahasiswaController extends Controller
         DB::transaction(function () use ($data, $request) {
             $user = User::create([
                 'name' => $data['nama'],
-                'email' => $data['email'], // satu email: email login = email profil
+                'email' => $data['email'],
                 'password' => $data['password'],
                 'role' => 'mahasiswa',
             ]);
@@ -109,7 +100,6 @@ class MahasiswaController extends Controller
             ->with('success', 'Data mahasiswa berhasil ditambahkan.');
     }
 
-    /** Perbarui data mahasiswa. */
     public function update(Request $request, Mahasiswa $mahasiswa)
     {
         $data = $this->validasi($request, $mahasiswa);
@@ -132,7 +122,6 @@ class MahasiswaController extends Controller
             $this->simpanOrganisasi($mahasiswa, $data['organisasi'] ?? []);
 
             if ($mahasiswa->user) {
-                // Email login selalu disamakan dengan email profil (satu sumber email).
                 $mahasiswa->user->update(array_filter([
                     'name' => $data['nama'],
                     'email' => $data['email'],
@@ -145,7 +134,6 @@ class MahasiswaController extends Controller
             ->with('success', 'Data mahasiswa berhasil diperbarui.');
     }
 
-    /** Hapus mahasiswa beserta akun user-nya. */
     public function destroy(Mahasiswa $mahasiswa)
     {
         $nama = $mahasiswa->nama;
@@ -160,10 +148,6 @@ class MahasiswaController extends Controller
             ->with('success', 'Data mahasiswa '.$nama.' berhasil dihapus.');
     }
 
-    /**
-     * Kembali ke daftar mahasiswa dengan pencarian, filter, jumlah per halaman, dan
-     * halaman yang sama seperti sebelum menyimpan/menghapus (tidak reset ke 10 data).
-     */
     private function kembaliKeDaftar()
     {
         $sebelumnya = url()->previous();
@@ -174,19 +158,11 @@ class MahasiswaController extends Controller
             : redirect()->route('staff-mahasiswa');
     }
 
-    /** Unduh template CSV mahasiswa. */
     public function template()
     {
         return ImporCsv::template('template-mahasiswa.csv', self::KOLOM_CSV);
     }
 
-    /**
-     * Impor CSV mahasiswa + akun login-nya (REVISI 28-09-2026 tahap 2).
-     * Aturan validasi sama dengan form Tambah Mahasiswa. NIM yang sudah terdaftar dilewati
-     * (bawaan) atau diperbarui. Password kosong -> password awal = NIM (min. 8 karakter);
-     * mahasiswa juga dapat masuk dengan Google memakai email @mhs.politala.ac.id.
-     * Foto dan Keaktifan Organisasi tetap diisi lewat form (tidak diimpor).
-     */
     public function impor(Request $request)
     {
         return $this->prosesImporCsv($request, [
@@ -208,7 +184,6 @@ class MahasiswaController extends Controller
             'cari' => fn (string $nim) => Mahasiswa::with('user')->where('nim', $nim)->first(),
             'aturan' => function (?Mahasiswa $lama, array $d) {
                 $aturan = $this->aturanData($lama);
-                // Password boleh kosong: dipakai NIM sebagai password awal (hanya data baru).
                 $aturan['password'] = ['nullable', 'string', 'min:8'];
                 if (! $lama && blank($d['password'] ?? null)) {
                     $aturan['nim'][] = 'min:8';
@@ -258,8 +233,7 @@ class MahasiswaController extends Controller
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'password' => [$mahasiswa ? 'nullable' : 'required', 'string', 'min:8'],
 
-            // Keaktifan Organisasi: nama organisasi + jabatan (skema poin Excel).
-            'organisasi' => ['nullable', 'array', 'max:'.self::MAKS_ORGANISASI],
+            'organisasi' => ['nullable', 'array', 'max:50'],
             'organisasi.*.nama_organisasi' => ['nullable', 'string', 'max:150', 'required_with:organisasi.*.jabatan'],
             'organisasi.*.jabatan' => ['nullable', Rule::in(array_keys(Organisasi::daftarJabatan())), 'required_with:organisasi.*.nama_organisasi'],
         ], $this->pesanValidasi() + [
@@ -269,7 +243,6 @@ class MahasiswaController extends Controller
         ], $this->atributValidasi());
     }
 
-    /** Aturan data profil mahasiswa (dipakai form dan impor CSV). */
     private function aturanData(?Mahasiswa $mahasiswa = null): array
     {
         return [
@@ -280,14 +253,11 @@ class MahasiswaController extends Controller
             'nama' => ['required', 'string', 'max:150'],
             'angkatan' => ['nullable', 'integer', 'min:1990', 'max:'.(date('Y') + 1)],
             'kelas' => ['nullable', 'string', 'max:30'],
-            // REVISI 24-09-2026: satu field email saja (email login = email profil)
-            // dan wajib memakai domain institusi mahasiswa.
             'email' => [
                 'required', 'email', 'max:150',
                 Rule::unique('users', 'email')->ignore($mahasiswa?->user_id, 'id_user'),
                 User::aturanDomainEmail('mahasiswa'),
             ],
-            // Validasi input (revisi 26-09-2026): nomor telepon hanya angka.
             'no_hp' => ['nullable', 'regex:/^[0-9]{10,15}$/'],
             'ipk' => ['nullable', 'numeric', 'min:0', 'max:4'],
             'status_mahasiswa' => ['required', Rule::in(Mahasiswa::STATUS)],
@@ -319,10 +289,6 @@ class MahasiswaController extends Controller
         ];
     }
 
-    /**
-     * Sinkronkan data organisasi mahasiswa (hapus lama, simpan yang diisi).
-     * Baris kosong diabaikan.
-     */
     private function simpanOrganisasi(Mahasiswa $mahasiswa, array $baris): void
     {
         $mahasiswa->organisasi()->delete();
@@ -350,5 +316,12 @@ class MahasiswaController extends Controller
         }
 
         return $request->file('foto')->store('mahasiswa', 'public');
+    }
+
+    private function jumlahBarisOrganisasi(): int
+    {
+        $terbanyak = (int) Organisasi::query()->selectRaw('COUNT(*) as jumlah')->groupBy('nim')->get()->max('jumlah');
+
+        return max(self::MAKS_ORGANISASI, $terbanyak);
     }
 }

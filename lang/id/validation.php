@@ -1,14 +1,5 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Pesan validasi Bahasa Indonesia (REVISI 28-09-2026 tahap 2)
-|--------------------------------------------------------------------------
-| Dipakai otomatis karena APP_LOCALE=id. Sebelumnya project belum punya berkas
-| bahasa sehingga pesan bawaan Laravel tampil dalam Bahasa Inggris (mis. pada
-| hasil impor CSV). Aturan yang tidak tercantum di sini kembali ke Bahasa Inggris.
-*/
-
 return [
     'accepted' => ':attribute harus disetujui.',
     'after' => ':attribute harus tanggal setelah :date.',

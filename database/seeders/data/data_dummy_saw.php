@@ -1,15 +1,5 @@
 <?php
 
-/*
-| Data dummy mahasiswa — disalin otomatis dari sheet "Data & Perhitungan SAW"
-| file "DATA DUMMY MAHASISWA_METODE SAW_KELOMPOK-3.xlsx" (kolom input saja).
-| Kolom hasil (C2, C3, C4, R1..R4, Vi, Ranking) TIDAK disalin: nilai tersebut
-| dihitung ulang oleh RankingService dari database.
-|
-| Satu baris = satu mahasiswa. Deskripsi prestasi yang dipisah tanda ';'
-| berarti lebih dari satu prestasi (kolom 'tambahan' pada Excel).
-*/
-
 return [
     ['no' => 1, 'nim' => '2501301069', 'nama' => 'Muhammad Rizqi Akbar', 'ipk' => 3.85,
         'pa_tingkat' => 'Nasional', 'pa_deskripsi' => 'Juara 1 Kompetisi Pemrograman Nasional; Finalis Karya Ilmiah tingkat kampus', 'pa_tambahan' => 1,

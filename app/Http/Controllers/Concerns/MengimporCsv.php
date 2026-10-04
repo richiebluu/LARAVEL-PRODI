@@ -8,30 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-/**
- * IMPOR CSV (REVISI 28-09-2026 tahap 2 — "semua halaman yang memiliki CRUD ditambah fitur
- * import csv seperti di Kurikulum, sesuaikan halaman mana yang butuh").
- *
- * Satu alur yang sama untuk semua halaman Data Master yang memakai impor CSV:
- *   1. Validasi berkas: wajib, .csv/.txt, maks 2 MB.
- *   2. Validasi judul kolom (kolom wajib harus ada — gunakan template).
- *   3. Validasi SETIAP baris memakai aturan yang sama dengan form tambah/edit.
- *   4. Data ganda di dalam file ditolak; data yang sudah ada di database
- *      DILEWATI (bawaan, data lama aman) atau DIPERBARUI sesuai pilihan Staff Prodi.
- *   5. Bila ada satu saja baris bermasalah, impor DIBATALKAN seluruhnya
- *      (tidak ada data setengah tersimpan) dan Staff Prodi melihat daftar baris yang salah.
- *   6. Semua penyimpanan dalam satu transaksi database.
- */
 trait MengimporCsv
 {
-    /**
-     * @param  array{
-     *   kolom: array<int,string>, wajib: array<int,string>, label: string, route: string,
-     *   kunci: callable, cari: callable, aturan: callable, simpan: callable,
-     *   siapkan?: callable, alias?: array<string,string>, pesan?: array, atribut?: array,
-     *   unik_file?: array<int,string>
-     * }  $cfg
-     */
     protected function prosesImporCsv(Request $request, array $cfg): RedirectResponse
     {
         $request->validate([
@@ -49,7 +27,6 @@ trait MengimporCsv
         $kolomBaca = array_values(array_unique(array_merge($cfg['kolom'], array_keys($alias))));
         $csv = ImporCsv::baca($request->file('berkas')->getRealPath(), $kolomBaca);
 
-        // Judul kolom alternatif (mis. "kode_mk" dari SIPADU) diarahkan ke kolom resmi.
         $judul = array_map(fn ($j) => $alias[$j] ?? $j, $csv['judul']);
         $hilang = array_values(array_diff($cfg['wajib'], $judul));
         if ($csv['judul'] === [] || $hilang) {

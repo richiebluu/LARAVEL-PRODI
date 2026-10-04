@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-/** Lowongan Pekerjaan — dikelola Staff Prodi (REVISI 26-09-2026). */
 class LowonganPekerjaanController extends Controller
 {
     public function index(Request $request)
@@ -66,7 +65,6 @@ class LowonganPekerjaanController extends Controller
             'deskripsi' => ['nullable', 'string', 'max:2000'],
             'link' => ['required', 'url', 'max:255'],
             'batas_lamaran' => ['nullable', 'date'],
-            'status' => ['required', Rule::in([LowonganPekerjaan::STATUS_AKTIF, LowonganPekerjaan::STATUS_NONAKTIF])],
         ], [
             'link.url' => 'Link lowongan harus berupa URL lengkap (https://...).',
         ], [

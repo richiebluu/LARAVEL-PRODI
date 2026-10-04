@@ -12,9 +12,11 @@
 <body data-page="staff-dashboard">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -42,32 +44,6 @@
         <div class="astat-card"><div class="astat-icon"><i class="fa-solid fa-medal"></i></div><div class="astat-num" id="statBerprestasi">{{ $ringkasan['mahasiswaBerprestasi'] }}</div><div class="astat-label">Mahasiswa Berprestasi</div></div>
       </div>
 
-      <div class="two-col">
-        <div>
-          <div class="panel">
-            <div class="panel-head"><h2>Quick Action</h2></div>
-            <div class="qa-grid">
-              <a href="{{ url('/staff-berita') }}" class="qa-btn"><div class="qa-icon"><i class="fa-solid fa-newspaper"></i></div> Kelola Berita</a>
-              <a href="{{ url('/staff-prestasi') }}" class="qa-btn"><div class="qa-icon"><i class="fa-solid fa-star"></i></div> Kelola Prestasi</a>
-              <a href="{{ url('/staff-ranking') }}" class="qa-btn"><div class="qa-icon"><i class="fa-solid fa-ranking-star"></i></div> Atur Ranking</a>
-              <a href="{{ url('/staff-pengumuman') }}" class="qa-btn"><div class="qa-icon"><i class="fa-solid fa-bullhorn"></i></div> Buat Pengumuman</a>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-head"><h2>Alur Sistem Prodi TI</h2></div>
-            <p style="font-size:.88rem; line-height:1.8;">
-              Staff Prodi mengelola <strong>Data Master</strong> (Profil Prodi, Struktur Organisasi,
-              Akreditasi, Dosen, dan Mahasiswa). Mahasiswa mengajukan prestasi lewat dashboardnya;
-              pengajuan tampil pada menu <strong>Prestasi</strong> untuk disetujui atau ditolak. Prestasi yang
-              disetujui tampil pada <em>/mahasiswa-berprestasi</em> dan dihitung <strong>Sistem</strong> pada
-              <em>/ranking</em> (metode SAW). Perubahan data diri dan Keaktifan Organisasi oleh mahasiswa
-              langsung tersimpan setelah lolos validasi form, tanpa proses persetujuan. Seluruh data disimpan pada
-              <strong>database MySQL</strong> melalui Model dan Controller Laravel.
-            </p>
-          </div>
-        </div>
-
         <div class="panel">
           <div class="panel-head"><h2>Aktivitas Terbaru</h2></div>
           <div class="activity-list" id="listAktivitas">
@@ -87,13 +63,12 @@
             @endforelse
           </div>
         </div>
-      </div>
 
       </div>
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

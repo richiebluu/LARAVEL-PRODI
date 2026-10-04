@@ -2,23 +2,10 @@
 
 namespace App\Support;
 
-/**
- * Pembaca file CSV untuk fitur Impor CSV Staff Prodi (REVISI 28-09-2026 tahap 2).
- *
- * - Baris pertama = judul kolom (tidak peka huruf besar/kecil, spasi -> garis bawah).
- * - Pemisah koma (,) atau titik koma (;) — Excel versi Indonesia menyimpan dengan titik koma.
- * - BOM UTF-8 dari Excel dibuang; teks non-UTF-8 (ANSI Windows) dikonversi ke UTF-8.
- * - Baris kosong dilewati. Nomor baris mengikuti nomor baris di file (judul = baris 1).
- */
 class ImporCsv
 {
-    /** Batas jumlah baris data per sekali impor (menjaga server tetap ringan). */
     public const MAKS_BARIS = 1000;
 
-    /**
-     * @param  array<int, string>  $kolom  Nama kolom yang dikenali (urutan template).
-     * @return array{judul: array<int, string>, baris: array<int, array<string, ?string>>}
-     */
     public static function baca(string $path, array $kolom): array
     {
         $isi = (string) file_get_contents($path);
@@ -39,7 +26,7 @@ class ImporCsv
 
         foreach (array_slice($baris, 1, null, true) as $i => $b) {
             if (trim(str_replace([$pemisah, '"'], '', $b)) === '') {
-                continue; // baris kosong (termasuk ";;;;" dari Excel)
+                continue;
             }
 
             $sel = str_getcsv($b, $pemisah, '"', '\\');
@@ -55,7 +42,6 @@ class ImporCsv
         return ['judul' => $judul, 'baris' => $hasil];
     }
 
-    /** "Nama Mata Kuliah " -> "nama_mata_kuliah". */
     public static function normalJudul(string $judul): string
     {
         $judul = strtolower(trim($judul, " \t\"'"));
@@ -63,7 +49,6 @@ class ImporCsv
         return trim((string) preg_replace('/[^a-z0-9]+/', '_', $judul), '_');
     }
 
-    /** Respons unduhan template CSV (hanya baris judul, dengan BOM agar Excel membaca UTF-8). */
     public static function template(string $namaFile, array $kolom)
     {
         return response("\xEF\xBB\xBF".implode(',', $kolom)."\n", 200, [
@@ -73,7 +58,6 @@ class ImporCsv
         ]);
     }
 
-    /** Cocokkan nilai dengan daftar pilihan tanpa peka huruf besar/kecil ("wajib" -> "Wajib"). */
     public static function cocokkan(?string $nilai, array $pilihan): ?string
     {
         if ($nilai === null) {
@@ -89,7 +73,6 @@ class ImporCsv
         return $nilai;
     }
 
-    /** Tanggal dari Excel: 2001-12-31, 31/12/2001, 31-12-2001, atau 31.12.2001 -> Y-m-d. */
     public static function tanggal(?string $nilai): ?string
     {
         if ($nilai === null) {
@@ -107,7 +90,6 @@ class ImporCsv
         return $nilai;
     }
 
-    /** Angka desimal gaya Indonesia "3,75" -> "3.75". */
     public static function desimal(?string $nilai): ?string
     {
         return $nilai === null ? null : str_replace(',', '.', $nilai);

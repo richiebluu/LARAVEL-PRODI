@@ -11,25 +11,8 @@ use App\Services\RankingService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-/**
- * DATA DUMMY MAHASISWA BERPRESTASI — sumber: file Excel
- * "DATA DUMMY MAHASISWA_METODE SAW_KELOMPOK-3.xlsx" (revisi dosen 22-09-2026).
- *
- * Yang dimasukkan ke database HANYA data input Excel:
- *   - mahasiswa  : NIM, nama, IPK (+ akun login role mahasiswa)
- *   - prestasi   : kategori (Prestasi Akademik / Prestasi Non-Akademik),
- *                  tingkat, judul (deskripsi Excel), status "disetujui"
- *   - organisasi : nama organisasi + jabatan
- *
- * Poin, normalisasi, nilai akhir (Vi) dan ranking TIDAK di-hardcode:
- * semuanya dihitung oleh RankingService dari data database, lalu disimpan
- * ke tabel ranking (sama seperti tombol "Hitung & Simpan Ranking").
- *
- * Seeder aman dijalankan ulang: mahasiswa yang NIM-nya sudah ada dilewati.
- */
 class DataDummySawSeeder extends Seeder
 {
-    /** Istilah tingkat pada Excel -> istilah tingkat pada website. */
     private const TINGKAT = [
         'Kampus' => 'Internal',
         'Internal' => 'Internal',
@@ -46,8 +29,6 @@ class DataDummySawSeeder extends Seeder
         $password = env('DUMMY_PASSWORD', 'password123');
         $dibuat = 0;
 
-        // Prestasi dummy berstatus "disetujui" -> diverifikasi oleh Staff Prodi pertama
-        // (ERD: STAFF_PRODI 1 -- MEMVERIFIKASI -- N PRESTASI).
         $this->verifikatorId = StaffProdi::query()->value('id_staff_prodi');
 
         DB::transaction(function () use ($data, $password, &$dibuat) {
@@ -63,12 +44,10 @@ class DataDummySawSeeder extends Seeder
                     ['name' => $row['nama'], 'password' => $password, 'role' => 'mahasiswa']
                 );
 
-                // ERD: MAHASISWA.nim (PK) + user_id (FK -> users.id_user).
                 $mahasiswa = Mahasiswa::create([
                     'nim' => $row['nim'],
                     'user_id' => $user->id_user,
                     'nama' => $row['nama'],
-                    // Angkatan diturunkan dari 2 digit awal NIM (25 -> 2025).
                     'angkatan' => 2000 + (int) substr($row['nim'], 0, 2),
                     'email' => $email,
                     'ipk' => $row['ipk'],
@@ -100,18 +79,11 @@ class DataDummySawSeeder extends Seeder
             }
         });
 
-        // Hitung ranking SAW dari database (bukan angka hardcode).
         $jumlah = app(RankingService::class)->simpan((int) date('Y'));
 
         $this->command?->info("Data dummy Excel: {$dibuat} mahasiswa baru, ranking {$jumlah} mahasiswa dihitung.");
     }
 
-    /**
-     * Satu sel "Deskripsi" Excel dapat berisi beberapa prestasi dipisah ';'.
-     * Prestasi pertama memakai tingkat pada kolom "Tingkat"; prestasi tambahan
-     * memakai tingkat yang tertulis di teksnya (mis. "tingkat kampus"),
-     * atau tingkat utama bila tidak disebutkan.
-     */
     private function buatPrestasi(Mahasiswa $m, string $kategori, ?string $tingkatExcel, ?string $deskripsi, int $tambahan): void
     {
         if (blank($tingkatExcel) || $tingkatExcel === 'Tidak Ada') {

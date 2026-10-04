@@ -8,11 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        /*
-         * STAFF_PRODI (ERD): id_staff_prodi (PK), id_user (FK), nip, nama, foto,
-         * jabatan, email, no_hp, created_at, updated_at.
-         * USERS (1) -- MEMILIKI -- (1) STAFF_PRODI. NIP = identitas unik staff.
-         */
         Schema::create('staff_prodi', function (Blueprint $table) {
             $table->id('id_staff_prodi');
             $table->foreignId('id_user')->unique()->constrained('users', 'id_user')->cascadeOnDelete();

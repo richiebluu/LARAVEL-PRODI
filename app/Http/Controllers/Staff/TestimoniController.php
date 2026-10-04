@@ -9,11 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-/**
- * INFORMASI PUBLIK — Testimoni Alumni.
- * REVISI 27-09-2026: jenis "Testimoni Mahasiswa Berprestasi" dihapus, sehingga tidak
- * ada lagi pilihan jenis/mahasiswa. Kolom mengikuti ERD TESTIMONI_ALUMNI.
- */
 class TestimoniController extends Controller
 {
     public function index(Request $request)

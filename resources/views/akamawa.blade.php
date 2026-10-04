@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AKAMAWA | Program Studi Teknologi Informasi</title>
+<title>{{ __('AKAMAWA | Program Studi Teknologi Informasi') }}</title>
 <meta name="description" content="AKAMAWA — Layanan Akademik dan Kemahasiswaan Politeknik Negeri Tanah Laut.">
 <link rel="icon" href="{{ asset('images/logo-ti.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -12,39 +12,35 @@
 </head>
 <body data-nav="informasi">
 
+  {{-- Navbar --}}
   @include('partials.public-navbar')
 
-  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  {{-- Hero --}}
   <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('akamawa') }}">
     <div class="container">
       <h1>AKAMAWA</h1>
-      <p>Layanan Akademik dan Kemahasiswaan Politeknik Negeri Tanah Laut.</p>
-      <div class="breadcrumb"><a href="{{ url('/') }}">Beranda</a><span class="sep">/</span><span>Informasi</span><span class="sep">/</span><span class="current">AKAMAWA</span></div>
+      <p>{{ __('Layanan Akademik dan Kemahasiswaan Politeknik Negeri Tanah Laut.') }}</p>
+      <div class="breadcrumb"><a href="{{ url('/') }}">{{ __('Beranda') }}</a><span class="sep">/</span><span>{{ __('Informasi') }}</span><span class="sep">/</span><span class="current">AKAMAWA</span></div>
     </div>
   </section>
 
-  {{-- REVISI 27-09-2026: menu Informasi > AKAMAWA (link tutorial dihapus).
-       Isi: nama AKAMAWA, penjelasan singkat, tombol "Kunjungi Website AKAMAWA". --}}
   <section class="section-pad">
     <div class="container">
-      <div class="grid-2" style="align-items:center;">
-        <div class="card link-card reveal" id="akamawa">
-          <div class="benefit-icon"><i class="fa-solid fa-building-columns"></i></div>
-          <h3>AKAMAWA</h3>
-          <p>AKAMAWA (Akademik dan Kemahasiswaan) adalah layanan Politeknik Negeri Tanah Laut untuk kebutuhan akademik dan kemahasiswaan, seperti informasi kalender akademik, peraturan akademik, beasiswa, dispensasi kuliah, legalisir dokumen, penangguhan UKT, ORMAWA, dan layanan lainnya.</p>
-          <div class="hero-actions" style="margin-top:auto;">
-            <a href="{{ $linkAkamawa }}" target="_blank" rel="noopener" class="btn btn-primary">Kunjungi Website AKAMAWA <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-          </div>
-        </div>
-        <div class="reveal text-center">
-          <img src="{{ asset('images/Kodex.png') }}" alt="Kodex" style="width:220px; margin:0 auto; animation:floaty 4.5s ease-in-out infinite;">
-        </div>
+      <div class="card reveal" id="akamawa" style="padding:44px; text-align:center; max-width:720px; margin:0 auto;">
+        <img src="{{ asset('images/Kodex.png') }}" alt="Kodex" style="width:120px; margin:0 auto 18px auto;">
+        <span class="eyebrow"><i class="fa-solid fa-building-columns"></i> {{ __('Layanan Akademik dan Kemahasiswaan') }}</span>
+        <h2 style="margin-top:10px;">AKAMAWA</h2>
+        <p>{{ __('AKAMAWA (Akademik dan Kemahasiswaan) adalah layanan Politeknik Negeri Tanah Laut untuk kebutuhan akademik dan kemahasiswaan.') }}</p>
+        <p style="margin-bottom:8px;">{{ __('Layanan yang tersedia antara lain:') }}</p>
+        <p style="margin-top:0;"><strong>{{ __('Kalender Akademik · Peraturan Akademik · Beasiswa · Dispensasi Kuliah · Legalisir Dokumen · Penangguhan UKT · ORMAWA') }}</strong></p>
+        <a href="{{ $linkAkamawa }}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;">{{ __('Kunjungi Website AKAMAWA') }} <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
       </div>
     </div>
   </section>
 
+  {{-- Footer --}}
   @include('partials.public-footer')
-  <button class="back-to-top" aria-label="Kembali ke atas"><i class="fa-solid fa-arrow-up"></i></button>
+  <button class="back-to-top" aria-label="{{ __('Kembali ke atas') }}"><i class="fa-solid fa-arrow-up"></i></button>
 <script src="{{ asset('js/main.js') }}"></script>
 </body>
 </html>

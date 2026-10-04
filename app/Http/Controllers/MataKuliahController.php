@@ -5,13 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\MataKuliah;
 use Illuminate\Http\Request;
 
-class KurikulumController extends Controller
+class MataKuliahController extends Controller
 {
-    /**
-     * Halaman Kurikulum (Profil > Kurikulum) — REVISI 28-09-2026.
-     * Daftar mata kuliah Program Studi sesuai SIPADU: kode, nama, semester, SKS, jenis.
-     * Ditampilkan per semester lengkap dengan total SKS.
-     */
     public function index(Request $request)
     {
         $semua = MataKuliah::query()->urut()->get();
@@ -24,7 +19,7 @@ class KurikulumController extends Controller
 
         $tampil = $semester ? $semua->where('semester', $semester) : $semua;
 
-        return view('kurikulum', [
+        return view('mata-kuliah', [
             'perSemester' => $tampil->groupBy('semester'),
             'daftarSemester' => $daftarSemester,
             'semester' => $semester,

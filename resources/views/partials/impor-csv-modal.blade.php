@@ -1,20 +1,8 @@
-{{-- Modal Impor CSV (REVISI 28-09-2026 tahap 2) — dipakai semua halaman Data Master yang punya impor CSV.
-     Parameter:
-       $id        : id modal (dipanggil tombol data-modal-open)
-       $judul     : judul modal
-       $action    : route POST impor
-       $template  : route GET unduh template
-       $kolom     : ['nama_kolom' => 'keterangan singkat', ...] (urutan = template)
-       $wajib     : kolom yang wajib ada & wajib diisi
-       $kunci     : kolom penentu data ganda (mis. 'kode', 'nim')
-       $kunciLabel: label kolom kunci untuk teks (mis. 'Kode mata kuliah')
-       $petunjuk  : teks petunjuk singkat (opsional)
-       $alias     : judul kolom alternatif => kolom resmi (opsional)
-     Pratinjau isi file ditampilkan sebelum diunggah (public/js/dashboard.js -> tiInitImporCsv). --}}
 @php
   $alias = $alias ?? [];
   $gagalImpor = session('impor_gagal') && $errors->has('berkas');
 @endphp
+{{-- Modal --}}
 <div class="modal-overlay" id="{{ $id }}" @if ($gagalImpor) data-buka-otomatis @endif>
   <div class="modal-box impor-box">
     <form method="POST" action="{{ $action }}" enctype="multipart/form-data"
@@ -51,10 +39,10 @@
         <input type="file" name="berkas" id="{{ $id }}Berkas" accept=".csv,text/csv" hidden>
         <div class="form-hint" id="{{ $id }}Info"></div>
 
-        {{-- Pratinjau data sebelum impor (dibaca di browser, belum disimpan). --}}
         <div class="impor-pratinjau" data-impor-pratinjau hidden>
           <div class="impor-ringkasan" data-impor-ringkasan></div>
           <div class="table-wrap impor-tabel">
+            {{-- Tabel --}}
             <table class="data-table"><thead data-impor-head></thead><tbody data-impor-body></tbody></table>
           </div>
         </div>

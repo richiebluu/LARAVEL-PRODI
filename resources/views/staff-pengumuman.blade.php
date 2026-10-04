@@ -12,9 +12,11 @@
 <body data-page="staff-pengumuman">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -57,10 +59,12 @@
                 </select>
               </div>
             </form>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahPengumuman"><i class="fa-solid fa-plus"></i> Buat Pengumuman</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Judul</th><th>Kategori Prestasi</th><th>Tanggal</th><th>Penerima</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
@@ -89,7 +93,7 @@
                         'status' => $g->status,
                       ]) }}"><i class="fa-solid fa-pen"></i></button>
                     <form method="POST" action="{{ route('staff-pengumuman.destroy', $g) }}" style="display:inline;"
-                          data-konfirmasi="Hapus pengumuman &quot;{{ $g->judul }}&quot;?">
+                          data-konfirmasi="Hapus pengumuman &quot;{{ $g->judul }}&quot;?" data-konfirmasi-judul="Hapus Pengumuman?" data-konfirmasi-catatan="Pengumuman juga hilang dari dashboard {{ $g->penerima_count }} mahasiswa penerima.">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fa-solid fa-trash"></i></button>
@@ -106,11 +110,12 @@
           Pengumuman ditujukan kepada <strong>mahasiswa berprestasi</strong> (memiliki prestasi yang sudah disetujui), bukan berdasarkan ranking.
           Satu pengumuman dapat memiliki <strong>banyak penerima</strong> (tabel <code>pengumuman_penerima</code>).
           Pengumuman berstatus <strong>terkirim</strong> otomatis tampil pada dashboard <strong>setiap</strong> mahasiswa yang dipilih
-          dan membuat notifikasi untuk masing-masing penerima; mahasiswa yang tidak dipilih tidak menerimanya.
+          dan menu Pengumuman masing-masing penerima; mahasiswa yang tidak dipilih tidak menerimanya.
           Pengumuman tidak pernah tampil di halaman publik.
         </p>
       </div>
 
+      {{-- Modal Buat Pengumuman --}}
       <div class="modal-overlay" id="modalTambahPengumuman" @if ($errors->any() && ! old('_method')) data-buka-otomatis @endif>
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-pengumuman.store') }}">
@@ -128,6 +133,7 @@
         </div>
       </div>
 
+      {{-- Modal Edit Pengumuman --}}
       <div class="modal-overlay" id="modalEditPengumuman">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditPengumuman">
@@ -150,7 +156,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('email_gagal'))
     <div data-flash="{{ session('email_gagal') }}" data-flash-tipe="bad" hidden></div>
   @endif

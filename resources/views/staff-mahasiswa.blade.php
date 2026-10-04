@@ -12,9 +12,11 @@
 <body data-page="staff-mahasiswa">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -58,7 +60,6 @@
                   <option value="{{ $th }}" @selected((string) $angkatan === (string) $th)>{{ $th }}</option>
                 @endforeach
               </select>
-              {{-- REVISI DOSEN 01-10-2026: jumlah data per halaman (default 10). --}}
               <label for="perPage" style="display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--grey-500); font-weight:500;">
                 Tampilkan
                 <select id="perPage" name="per_page" data-auto-submit style="padding:10px 14px; border-radius:10px; border:1.5px solid var(--grey-300); font-size:.85rem;">
@@ -70,10 +71,12 @@
               </label>
             </form>
             <button class="btn btn-outline" data-modal-open="modalImporMahasiswa"><i class="fa-solid fa-file-import"></i> Impor CSV</button>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahMahasiswa"><i class="fa-solid fa-plus"></i> Tambah Mahasiswa</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>No</th><th>Foto</th><th>NIM</th><th>Nama</th><th>Angkatan</th><th>Kelas</th><th>IPK</th><th>Organisasi</th><th>Status</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
@@ -120,7 +123,7 @@
                         'status_mahasiswa' => $m->status_mahasiswa,
                       ] + $isiOrganisasi) }}"><i class="fa-solid fa-pen"></i></button>
                     <form method="POST" action="{{ route('staff-mahasiswa.destroy', $m) }}" style="display:inline;"
-                          data-konfirmasi="Hapus data mahasiswa {{ $m->nama }}? Akun login-nya ikut terhapus.">
+                          data-konfirmasi="Hapus data mahasiswa {{ $m->nama }} ({{ $m->nim }})?" data-konfirmasi-judul="Hapus Mahasiswa?" data-konfirmasi-catatan="Akun login, prestasi, dan organisasi mahasiswa ini ikut terhapus dan tidak dapat dikembalikan.">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Hapus"><i class="fa-solid fa-trash"></i></button>
@@ -133,7 +136,6 @@
             </tbody>
           </table>
         </div>
-        {{-- Navigasi pagination Laravel (URL membawa q, angkatan, dan per_page). --}}
         @php
           $halAwal = max(1, $daftarMahasiswa->currentPage() - 2);
           $halAkhir = min($daftarMahasiswa->lastPage(), $daftarMahasiswa->currentPage() + 2);
@@ -162,8 +164,9 @@
         </div>
       </div>
 
-      <!-- ===== Modal detail per mahasiswa (data dari database) ===== -->
+      {{-- Modal Detail Mahasiswa --}}
       @foreach ($daftarMahasiswa as $m)
+        {{-- Modal Detail Mahasiswa --}}
         <div class="modal-overlay" id="modalDetailMhs{{ $m->nim }}">
           <div class="modal-box">
             <div class="modal-head"><h3>Detail Mahasiswa</h3>
@@ -208,7 +211,7 @@
         </div>
       @endforeach
 
-      <!-- ===== Modal TAMBAH mahasiswa ===== -->
+      {{-- Modal Tambah Mahasiswa --}}
       <div class="modal-overlay" id="modalTambahMahasiswa">
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-mahasiswa.store') }}" enctype="multipart/form-data">
@@ -235,7 +238,7 @@
                 <div class="form-group full"><label>Foto</label><input type="file" name="foto" accept="image/*">
                   <div class="form-hint">JPG/PNG/WEBP, maksimal 2 MB.</div></div>
                 <div class="form-group full"><label>Keaktifan Organisasi</label>
-                  <div class="form-hint" style="margin-top:0;">Isi nama organisasi dan jabatan. Poin dihitung dari jabatan (maksimal {{ $maksOrganisasi }} organisasi).</div></div>
+                  <div class="form-hint" style="margin-top:0;">Isi nama organisasi dan jabatan; kosongkan baris yang tidak dipakai. Poin dihitung dari jabatan.</div></div>
                 @for ($i = 0; $i < $maksOrganisasi; $i++)
                   <div class="form-group"><label>Nama Organisasi {{ $i + 1 }}</label>
                     <input name="organisasi[{{ $i }}][nama_organisasi]" value="{{ old('organisasi.'.$i.'.nama_organisasi') }}" placeholder="Contoh: HIMA TI"></div>
@@ -259,7 +262,7 @@
         </div>
       </div>
 
-      <!-- ===== Modal EDIT mahasiswa (action diisi dari tombol) ===== -->
+      {{-- Modal Edit Mahasiswa --}}
       <div class="modal-overlay" id="modalEditMahasiswa">
         <div class="modal-box">
           <form method="POST" action="#" id="formEditMahasiswa" enctype="multipart/form-data">
@@ -287,7 +290,7 @@
                 <div class="form-group full"><label>Ganti Foto</label><input type="file" name="foto" accept="image/*">
                   <div class="form-hint">Kosongkan bila tidak ingin mengganti foto.</div></div>
                 <div class="form-group full"><label>Keaktifan Organisasi</label>
-                  <div class="form-hint" style="margin-top:0;">Isi nama organisasi dan jabatan. Poin dihitung dari jabatan (maksimal {{ $maksOrganisasi }} organisasi).</div></div>
+                  <div class="form-hint" style="margin-top:0;">Isi nama organisasi dan jabatan; kosongkan baris yang tidak dipakai. Poin dihitung dari jabatan.</div></div>
                 @for ($i = 0; $i < $maksOrganisasi; $i++)
                   <div class="form-group"><label>Nama Organisasi {{ $i + 1 }}</label>
                     <input name="organisasi[{{ $i }}][nama_organisasi]" placeholder="Contoh: HIMA TI"></div>
@@ -311,7 +314,7 @@
         </div>
       </div>
 
-      {{-- REVISI 28-09-2026 tahap 2: Impor CSV mahasiswa (akun login dibuat otomatis). --}}
+      {{-- Modal Impor CSV --}}
       @include('partials.impor-csv-modal', [
         'id' => 'modalImporMahasiswa',
         'judul' => 'Impor Data Mahasiswa (CSV)',
@@ -339,7 +342,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

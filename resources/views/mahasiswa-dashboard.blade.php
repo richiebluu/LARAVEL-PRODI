@@ -12,32 +12,11 @@
 <body data-page="mahasiswa-dashboard">
   <div class="admin-shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-badge brand-logo"><img src="{{ asset('images/logo-ti.png') }}" alt="Logo Program Studi Teknologi Informasi"></div>
-      <div>
-        <span class="b1">POLITALA</span>
-        <span class="b2">Dashboard Mahasiswa</span>
-      </div>
-    </div>
-    <nav class="sidebar-menu">
-      <div class="menu-label">MENU UTAMA</div>
-      <a href="{{ url('/mahasiswa-dashboard') }}" class="side-link"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-      <a href="{{ url('/mahasiswa-profile') }}" class="side-link"><i class="fa-solid fa-id-card"></i> Profil Saya</a>
-      <a href="{{ url('/mahasiswa-prestasi') }}" class="side-link"><i class="fa-solid fa-trophy"></i> Prestasi Saya</a>
-      <a href="{{ url('/mahasiswa-ajukan-prestasi') }}" class="side-link"><i class="fa-solid fa-plus"></i> Ajukan Prestasi</a>
-      <a href="{{ url('/ranking') }}" class="side-link"><i class="fa-solid fa-ranking-star"></i> Ranking</a>
-      <a href="{{ url('/mahasiswa-pengumuman') }}" class="side-link"><i class="fa-solid fa-bullhorn"></i> Pengumuman</a>
-      <a href="{{ url('/mahasiswa-notifikasi') }}" class="side-link"><i class="fa-solid fa-bell"></i> Notifikasi</a>
-      <div class="menu-label">WEBSITE PUBLIK</div>
-      <a href="{{ url('/') }}" class="side-link"><i class="fa-solid fa-globe"></i> Lihat Website</a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#" class="side-link logout" data-logout><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-    </div>
-  </aside>
+  {{-- Sidebar --}}
+  @include('partials.mahasiswa-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -66,8 +45,6 @@
           <h2 id="pNama">{{ $mahasiswa->nama ?? auth()->user()->name }}</h2>
           <p id="pMeta">{{ $mahasiswa ? $mahasiswa->nim.' · '.($mahasiswa->kelas ?? '-').' · Angkatan '.($mahasiswa->angkatan ?? '-') : '-' }}</p>
         </div>
-        <div class="spacer"></div>
-        <a href="{{ url('/mahasiswa-ajukan-prestasi') }}" class="btn btn-light"><i class="fa-solid fa-plus"></i> Ajukan Prestasi</a>
       </div>
 
       <div class="astats-grid" style="grid-template-columns:repeat(4,1fr);">
@@ -86,6 +63,7 @@
         <div class="panel">
           <div class="panel-head"><h2>Nilai Kriteria Penilaian</h2><a href="{{ url('/ranking') }}" class="btn btn-outline btn-sm">Lihat Ranking</a></div>
           <div class="table-wrap">
+            {{-- Tabel --}}
             <table class="data-table">
               <thead><tr><th>Kriteria</th><th>Sumber Data</th><th>Nilai / Poin</th><th>Bobot</th></tr></thead>
               <tbody>
@@ -127,27 +105,21 @@
           </div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2>Notifikasi</h2><a href="{{ url('/mahasiswa-notifikasi') }}" class="btn btn-outline btn-sm">Lihat Semua</a></div>
-          <div id="listNotif">
-            @include('partials.notifikasi-list', ['daftar' => $notifikasi])
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2>Pengumuman Terbaru</h2><a href="{{ url('/mahasiswa-pengumuman') }}" class="btn btn-outline btn-sm">Lihat Semua</a></div>
-        <div class="activity-list" id="listPengumuman">
-          @forelse ($daftarPengumuman as $item)
-            <div class="activity-item">
-              <div class="activity-dot"><i class="fa-solid fa-bullhorn"></i></div>
-              <div>
-                <div class="activity-text"><strong>{{ $item->judul }}</strong></div>
-                <div class="activity-time">{{ optional($item->tanggal_dikirim ?? $item->created_at)->translatedFormat('d F Y') }}</div>
+          <div class="panel-head"><h2>Pengumuman Terbaru @if ($jumlahBelumDibaca)<span class="badge badge-cyan" style="vertical-align:middle;">{{ $jumlahBelumDibaca }} baru</span>@endif</h2><a href="{{ url('/mahasiswa-pengumuman') }}" class="btn btn-outline btn-sm">Lihat Semua</a></div>
+          <div id="listPengumuman">
+            @forelse ($daftarPengumuman as $item)
+              <div class="notif-item {{ $item->belum_dibaca ? 'unread' : '' }}">
+                <div class="notif-ico"><i class="fa-solid {{ $item->status === \App\Models\Pengumuman::STATUS_NOTIFIKASI ? 'fa-circle-info' : 'fa-bullhorn' }}"></i></div>
+                <div style="flex:1;">
+                  <strong>{{ $item->judul }}</strong>
+                  <p>{{ \Illuminate\Support\Str::limit($item->status === \App\Models\Pengumuman::STATUS_NOTIFIKASI ? ($item->notifikasi ?? $item->isi) : $item->isi, 110) }}</p>
+                  <span class="notif-time">{{ ($item->tanggal_dikirim ?? $item->created_at)?->diffForHumans() }}</span>
+                </div>
               </div>
-            </div>
-          @empty
-            <div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>Belum ada pengumuman untuk Anda.</p></div>
-          @endforelse
+            @empty
+              <div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>Belum ada pengumuman untuk Anda.</p></div>
+            @endforelse
+          </div>
         </div>
       </div>
 
@@ -155,7 +127,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

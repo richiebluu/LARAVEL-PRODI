@@ -10,7 +10,6 @@ use App\Support\Berkas;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-/** DATA MASTER — Struktur Organisasi Program Studi (REVISI 26-09-2026). */
 class StrukturOrganisasiController extends Controller
 {
     public function index()
@@ -18,7 +17,7 @@ class StrukturOrganisasiController extends Controller
         return view('staff-struktur-organisasi', [
             'daftarStruktur' => StrukturOrganisasi::with('dosen')->urut()->get(),
             'daftarDosen' => Dosen::orderBy('nama')->get(['nuptk', 'nama']),
-            'saranJabatan' => StrukturOrganisasi::SARAN_JABATAN,
+            'daftarJabatan' => StrukturOrganisasi::daftarJabatan(),
         ]);
     }
 
@@ -61,17 +60,17 @@ class StrukturOrganisasiController extends Controller
     private function validasi(Request $request): array
     {
         $data = $request->validate([
-            'jabatan' => ['required', 'string', 'max:150'],
-            // ERD: DOSEN (1) -- MENJABAT -- (N) STRUKTUR_ORGANISASI, dosen_id berisi NUPTK.
+            'jabatan' => ['required', 'string', Rule::in(StrukturOrganisasi::daftarJabatan())],
             'dosen_id' => ['nullable', Rule::exists('dosen', 'nuptk')],
-            // Nama wajib bila pejabat tidak dipilih dari data dosen (mis. Staff Prodi).
             'nama' => ['nullable', 'required_without:dosen_id', 'string', 'max:150'],
-            // REVISI 27-09-2026: upload foto pejabat (opsional).
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
-            'nama.required_without' => 'Pilih dosen atau isi nama pejabat.',
+            'jabatan.in' => 'Pilih Jabatan dari daftar yang tersedia.',
+            'nama.required_without' => 'Pilih dari Daftar Dosen atau isi Nama Staff.',
         ], [
-            'dosen_id' => 'Dosen',
+            'jabatan' => 'Jabatan',
+            'dosen_id' => 'Daftar Dosen',
+            'nama' => 'Nama Staff',
             'foto' => 'Foto',
         ]);
 
@@ -81,7 +80,7 @@ class StrukturOrganisasiController extends Controller
         $data['nama'] = $data['nama'] ?? null;
 
         if (! empty($data['dosen_id'])) {
-            $data['nama'] = null; // nama diambil dari data dosen
+            $data['nama'] = null;
         }
 
         return $data;

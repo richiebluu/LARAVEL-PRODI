@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Dosen;
-use App\Models\KegiatanMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\MataKuliah;
 use App\Models\ProspekLulusan;
@@ -17,7 +16,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/** Uji revisi 28 September 2026 tahap 2 (dokumen "REVISI BARU(1).docx"). */
 class Revisi28SeptemberTahap2Test extends TestCase
 {
     use RefreshDatabase;
@@ -41,18 +39,19 @@ class Revisi28SeptemberTahap2Test extends TestCase
 
     public function test_struktur_database_tabel_baru(): void
     {
-        foreach (['id_sarana_prasarana', 'nama', 'jenis', 'lokasi', 'kapasitas', 'fasilitas', 'deskripsi', 'foto', 'status', 'staff_prodi_id'] as $k) {
+        foreach (['id_sarana_prasarana', 'nama', 'gedung', 'kapasitas', 'fasilitas', 'foto', 'status', 'staff_prodi_id'] as $k) {
             $this->assertTrue(Schema::hasColumn('sarana_prasarana', $k), 'sarana_prasarana.'.$k);
         }
+        $this->assertFalse(Schema::hasColumn('sarana_prasarana', 'deskripsi'));
+        $this->assertFalse(Schema::hasColumn('sarana_prasarana', 'jenis'));
+        $this->assertFalse(Schema::hasColumn('sarana_prasarana', 'lokasi'));
         $this->assertFalse(Schema::hasColumn('sarana_prasarana', 'urutan'), 'ERD: tanpa kolom urutan');
-        foreach (['judul', 'kategori', 'tanggal', 'lokasi', 'penyelenggara', 'deskripsi', 'foto', 'status', 'staff_prodi_id'] as $k) {
-            $this->assertTrue(Schema::hasColumn('kegiatan_mahasiswa', $k), 'kegiatan_mahasiswa.'.$k);
-        }
+        $this->assertFalse(Schema::hasTable('kegiatan_mahasiswa'));
     }
 
     public function test_hak_akses_halaman_staff_baru(): void
     {
-        $urlStaff = ['/staff-sarana-prasarana', '/staff-kegiatan-mahasiswa', '/staff-sarana-prasarana/template',
+        $urlStaff = ['/staff-sarana-prasarana', '/staff-berita', '/staff-sarana-prasarana/template',
             '/staff-mahasiswa/template', '/staff-dosen/template', '/staff-prospek-lulusan/template'];
 
         foreach ($urlStaff as $url) {
@@ -61,37 +60,36 @@ class Revisi28SeptemberTahap2Test extends TestCase
             Auth::logout();
         }
 
-        // Tamu & mahasiswa tidak bisa menambah data maupun mengimpor CSV.
-        $this->post('/staff-sarana-prasarana', ['nama' => 'Lab X', 'jenis' => 'Laboratorium', 'status' => 'aktif'])->assertRedirect(route('login'));
+        $this->post('/staff-sarana-prasarana', ['nama' => 'Lab X', 'gedung' => 'Adriansyah 1', 'status' => 'aktif'])->assertRedirect(route('login'));
         $this->post('/staff-mahasiswa/impor', ['berkas' => $this->csv("nim,nama,email\n1,a,b\n")])->assertRedirect(route('login'));
-        $this->actingAs($this->mahasiswa())->post('/staff-kegiatan-mahasiswa', ['judul' => 'X'])->assertRedirect(route('mahasiswa-dashboard'));
+        $this->actingAs($this->mahasiswa())->post('/staff-berita', ['judul' => 'X', 'jenis' => 'kegiatan_mahasiswa'])->assertRedirect(route('mahasiswa-dashboard'));
         $this->assertSame(0, SaranaPrasarana::count());
-        $this->assertSame(0, KegiatanMahasiswa::count());
+        $this->assertSame(0, \App\Models\Berita::count());
 
         Auth::logout();
-        foreach (['/staff-sarana-prasarana', '/staff-kegiatan-mahasiswa'] as $url) {
+        foreach (['/staff-sarana-prasarana', '/staff-berita?jenis=kegiatan_mahasiswa'] as $url) {
             $this->actingAs($this->staff())->get($url)->assertOk();
         }
-        // Halaman publik dapat dibuka tanpa login (termasuk saat data kosong).
         Auth::logout();
         $this->get('/sarana-prasarana')->assertOk()->assertSee('belum diisi');
-        $this->get('/kegiatan-mahasiswa')->assertOk()->assertSee('Belum ada kegiatan');
+        $this->get('/kegiatan-mahasiswa')->assertRedirect(route('berita', ['jenis' => 'kegiatan-mahasiswa']));
+        $this->get('/berita?jenis=kegiatan-mahasiswa')->assertOk()->assertSee('Belum ada kegiatan');
     }
 
     public function test_navbar_dropdown_dan_capital_each_word(): void
     {
         $html = $this->get('/')->getContent();
-        // Profil: Sarana & Prasarana ada di dropdown Profil.
-        $this->assertMatchesRegularExpression('#/kurikulum">Kurikulum</a>\s*<a href="[^"]*/sarana-prasarana">Sarana &amp; Prasarana</a>#', $html);
-        // Mahasiswa: Kegiatan Mahasiswa urutan KETIGA.
-        $this->assertMatchesRegularExpression('#<div class="dropdown">\s*<a href="[^"]*/mahasiswa-berprestasi">Mahasiswa Berprestasi</a>\s*<a href="[^"]*/ranking">Ranking Mahasiswa</a>\s*<a href="[^"]*/kegiatan-mahasiswa">Kegiatan Mahasiswa</a>#', $html);
+        $this->assertMatchesRegularExpression('#/mata-kuliah">Mata Kuliah</a>\s*<a href="[^"]*/sarana-prasarana">Sarana &amp; Prasarana</a>#', $html);
+        $this->assertMatchesRegularExpression('#<div class="dropdown">\s*<a href="[^"]*/mahasiswa-berprestasi">Mahasiswa Berprestasi</a>\s*<a href="[^"]*/ranking">Ranking Mahasiswa</a>\s*</div>#', $html);
+        $this->assertStringNotContainsString('/kegiatan-mahasiswa"', $html);
         foreach (['>Beranda</a>', '>Profil <i', '>Mahasiswa <i', '>Testimoni</a>', '>Lowongan Kerja</a>', '>Informasi <i'] as $label) {
             $this->assertStringContainsString($label, $html, $label);
         }
         $this->assertStringNotContainsString('text-transform: uppercase; }', file_get_contents(public_path('css/app.css')));
         $sidebar = $this->actingAs($this->staff())->get('/staff-dashboard')->getContent();
         $this->assertStringContainsString('/staff-sarana-prasarana', $sidebar);
-        $this->assertStringContainsString('/staff-kegiatan-mahasiswa', $sidebar);
+        $this->assertStringNotContainsString('/staff-kegiatan-mahasiswa', $sidebar);
+        $this->assertStringContainsString('/staff-berita', $sidebar);
     }
 
     public function test_crud_sarana_prasarana_dan_halaman_publik(): void
@@ -99,31 +97,31 @@ class Revisi28SeptemberTahap2Test extends TestCase
         Storage::fake('public');
         $this->actingAs($this->staff());
 
-        $this->post('/staff-sarana-prasarana', ['nama' => '', 'jenis' => 'Gudang', 'status' => 'aktif'])
-            ->assertSessionHasErrors(['nama', 'jenis']);
+        $this->post('/staff-sarana-prasarana', ['nama' => '', 'gedung' => 'Gedung Lain', 'status' => 'aktif'])
+            ->assertSessionHasErrors(['nama', 'gedung']);
 
         $this->post('/staff-sarana-prasarana', [
-            'nama' => 'Laboratorium Pemrograman', 'jenis' => 'Laboratorium', 'lokasi' => 'Gedung TI Lt. 2', 'kapasitas' => 30,
-            'fasilitas' => "30 unit PC\nProyektor", 'deskripsi' => 'Praktikum pemrograman.', 'status' => 'aktif',
-            'foto' => UploadedFile::fake()->image('lab.jpg'),
+            'nama' => 'Laboratorium Pemrograman', 'gedung' => 'Gedung Teknik Informatika', 'kapasitas' => 30,
+            'fasilitas' => "30 unit PC\nProyektor", 'status' => 'aktif',
+            'foto' => $this->gambarPalsu('lab.jpg'),
         ])->assertSessionHasNoErrors();
-        $this->post('/staff-sarana-prasarana', ['nama' => 'Ruang Baca', 'jenis' => 'Ruang Penunjang', 'status' => 'aktif'])->assertSessionHasNoErrors();
-        $this->post('/staff-sarana-prasarana', ['nama' => 'Gudang Lama', 'jenis' => 'Fasilitas Pendukung', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-sarana-prasarana', ['nama' => 'Ruang Baca', 'gedung' => 'Adriansyah 2', 'status' => 'aktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-sarana-prasarana', ['nama' => 'Gudang Lama', 'gedung' => 'Adriansyah 1', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
 
         $lab = SaranaPrasarana::where('nama', 'Laboratorium Pemrograman')->firstOrFail();
         $this->assertSame(['30 unit PC', 'Proyektor'], $lab->daftar_fasilitas);
         Storage::disk('public')->assertExists($lab->foto);
 
         $publik = $this->get('/sarana-prasarana')->assertOk()->getContent();
-        foreach (['Laboratorium Pemrograman', 'Gedung TI Lt. 2', '30 orang', '30 unit PC', 'Ruang Baca'] as $t) {
+        foreach (['Laboratorium Pemrograman', 'Gedung Teknik Informatika', '30 orang', '30 unit PC', 'Ruang Baca', 'Adriansyah 2'] as $t) {
             $this->assertStringContainsString($t, $publik, $t);
         }
         $this->assertStringNotContainsString('Gudang Lama', $publik, 'data nonaktif tidak tampil');
-        $this->assertLessThan(strpos($publik, 'Ruang Baca'), strpos($publik, 'Laboratorium Pemrograman'), 'laboratorium tampil lebih dulu');
-        $this->get('/sarana-prasarana?jenis=Ruang%20Penunjang')->assertSee('Ruang Baca')->assertDontSee('Laboratorium Pemrograman');
+        $this->assertLessThan(strpos($publik, 'Ruang Baca'), strpos($publik, 'Laboratorium Pemrograman'), 'urut sesuai gedung');
+        $this->get('/sarana-prasarana?gedung=Adriansyah%202')->assertSee('Ruang Baca')->assertDontSee('Laboratorium Pemrograman');
 
         $fotoLama = $lab->foto;
-        $this->put('/staff-sarana-prasarana/'.$lab->id_sarana_prasarana, ['nama' => 'Lab Pemrograman', 'jenis' => 'Laboratorium', 'kapasitas' => 32, 'status' => 'aktif', 'hapus_foto' => 1])->assertSessionHasNoErrors();
+        $this->put('/staff-sarana-prasarana/'.$lab->id_sarana_prasarana, ['nama' => 'Lab Pemrograman', 'gedung' => 'Gedung Teknik Informatika', 'kapasitas' => 32, 'status' => 'aktif', 'hapus_foto' => 1])->assertSessionHasNoErrors();
         $this->assertSame(32, $lab->fresh()->kapasitas);
         $this->assertNull($lab->fresh()->foto);
         Storage::disk('public')->assertMissing($fotoLama);
@@ -137,66 +135,65 @@ class Revisi28SeptemberTahap2Test extends TestCase
     {
         $this->actingAs($this->staff());
 
-        $this->post('/staff-kegiatan-mahasiswa', ['judul' => 'Seminar', 'kategori' => 'Tidak Ada', 'tanggal' => 'bukan-tanggal', 'status' => 'aktif'])
-            ->assertSessionHasErrors(['kategori', 'tanggal']);
+        $this->post('/staff-berita', ['judul' => 'Seminar', 'jenis' => 'bukan-jenis', 'isi' => 'x', 'tanggal' => 'bukan-tanggal', 'status' => 'terbit'])
+            ->assertSessionHasErrors(['jenis', 'tanggal']);
 
-        $this->post('/staff-kegiatan-mahasiswa', ['judul' => 'Seminar Nasional TI', 'kategori' => 'Seminar & Workshop', 'tanggal' => '2026-09-01',
-            'lokasi' => 'Aula Politala', 'penyelenggara' => 'HIMA TI', 'deskripsi' => "Paragraf satu.\nParagraf dua.", 'status' => 'aktif'])->assertSessionHasNoErrors();
-        $this->post('/staff-kegiatan-mahasiswa', ['judul' => 'Lomba Web Design', 'kategori' => 'Lomba & Kompetisi', 'tanggal' => '2026-08-10', 'status' => 'aktif'])->assertSessionHasNoErrors();
-        $this->post('/staff-kegiatan-mahasiswa', ['judul' => 'Draft Kegiatan', 'kategori' => 'Lainnya', 'tanggal' => '2026-07-01', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-berita', ['judul' => 'Seminar Nasional TI', 'jenis' => 'kegiatan_mahasiswa', 'kategori' => 'Seminar & Workshop', 'tanggal' => '2026-09-01',
+            'lokasi' => 'Aula Politala', 'penyelenggara' => 'HIMA TI', 'isi' => "Paragraf satu.\nParagraf dua.", 'status' => 'terbit'])->assertSessionHasNoErrors();
+        $this->post('/staff-berita', ['judul' => 'Lomba Web Design', 'jenis' => 'kegiatan_mahasiswa', 'kategori' => 'Lomba & Kompetisi', 'isi' => 'Lomba', 'tanggal' => '2026-08-10', 'status' => 'terbit'])->assertSessionHasNoErrors();
+        $this->post('/staff-berita', ['judul' => 'Draft Kegiatan', 'jenis' => 'kegiatan_mahasiswa', 'isi' => 'Draft', 'tanggal' => '2026-07-01', 'status' => 'draft'])->assertSessionHasNoErrors();
+        $this->post('/staff-berita', ['judul' => 'Berita Prodi Biasa', 'jenis' => 'berita', 'lokasi' => 'Diabaikan', 'isi' => 'Isi', 'tanggal' => '2026-08-20', 'status' => 'terbit'])->assertSessionHasNoErrors();
+        $this->assertNull(\App\Models\Berita::where('judul', 'Berita Prodi Biasa')->value('lokasi'), 'lokasi hanya untuk kegiatan');
 
-        $publik = $this->get('/kegiatan-mahasiswa')->assertOk()->getContent();
-        foreach (['Seminar Nasional TI', 'Aula Politala', 'Lomba Web Design', 'Paragraf dua.'] as $t) {
+        $publik = $this->get('/berita?jenis=kegiatan-mahasiswa')->assertOk()->getContent();
+        foreach (['Seminar Nasional TI', 'Lomba Web Design'] as $t) {
             $this->assertStringContainsString($t, $publik, $t);
         }
         $this->assertStringNotContainsString('Draft Kegiatan', $publik);
+        $this->assertStringNotContainsString('Berita Prodi Biasa', $publik);
         $this->assertLessThan(strpos($publik, 'Lomba Web Design'), strpos($publik, 'Seminar Nasional TI'), 'kegiatan terbaru lebih dulu');
-        $this->get('/kegiatan-mahasiswa?kategori=Lomba%20%26%20Kompetisi')->assertSee('Lomba Web Design')->assertDontSee('Seminar Nasional TI');
-        $this->get('/kegiatan-mahasiswa?q=Aula')->assertSee('Seminar Nasional TI')->assertDontSee('Lomba Web Design');
+        $this->get('/berita')->assertSee('Seminar Nasional TI')->assertSee('Berita Prodi Biasa');
+        $this->get('/berita?q=Aula')->assertSee('Seminar Nasional TI')->assertDontSee('Lomba Web Design');
+        $this->get('/berita/seminar-nasional-ti')->assertOk()->assertSee('Aula Politala')->assertSee('HIMA TI')->assertSee('Paragraf dua.');
 
-        $k = KegiatanMahasiswa::where('judul', 'Seminar Nasional TI')->firstOrFail();
-        $this->put('/staff-kegiatan-mahasiswa/'.$k->id_kegiatan_mahasiswa, ['judul' => 'Seminar Nasional TI 2026', 'kategori' => 'Seminar & Workshop',
-            'tanggal' => '2026-09-02', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
+        $k = \App\Models\Berita::where('judul', 'Seminar Nasional TI')->firstOrFail();
+        $this->get('/staff-berita?jenis=kegiatan_mahasiswa')->assertOk()->assertSee('Seminar Nasional TI')->assertDontSee('Berita Prodi Biasa');
+        $this->put('/staff-berita/'.$k->id_berita, ['judul' => 'Seminar Nasional TI 2026', 'jenis' => 'kegiatan_mahasiswa', 'isi' => 'Isi',
+            'tanggal' => '2026-09-02', 'status' => 'draft'])->assertSessionHasNoErrors();
         $this->assertSame('2026-09-02', $k->fresh()->tanggal->format('Y-m-d'));
-        $this->get('/kegiatan-mahasiswa')->assertDontSee('Seminar Nasional TI 2026');
+        $this->get('/berita?jenis=kegiatan-mahasiswa')->assertDontSee('Seminar Nasional TI 2026');
 
-        $this->delete('/staff-kegiatan-mahasiswa/'.$k->id_kegiatan_mahasiswa)->assertSessionHasNoErrors();
-        $this->assertDatabaseMissing('kegiatan_mahasiswa', ['id_kegiatan_mahasiswa' => $k->id_kegiatan_mahasiswa]);
+        $this->delete('/staff-berita/'.$k->id_berita)->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('berita', ['id_berita' => $k->id_berita]);
     }
 
     public function test_impor_csv_sarana_prasarana(): void
     {
         $this->actingAs($this->staff());
-        SaranaPrasarana::create(['nama' => 'Laboratorium Jaringan', 'jenis' => 'Laboratorium', 'kapasitas' => 20, 'status' => 'aktif']);
+        SaranaPrasarana::create(['nama' => 'Laboratorium Jaringan', 'gedung' => 'Gedung Teknik Informatika', 'kapasitas' => 20, 'status' => 'aktif']);
 
-        $this->get('/staff-sarana-prasarana/template')->assertOk()->assertSee('nama,jenis,lokasi,kapasitas,fasilitas,deskripsi,status');
+        $this->get('/staff-sarana-prasarana/template')->assertOk()->assertSee('nama,gedung,kapasitas,fasilitas,status');
 
-        // Judul kolom wajib tidak ada.
-        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,lokasi\nLab A,Gedung\n")])
+        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,kapasitas\nLab A,20\n")])
             ->assertSessionHasErrors('berkas')->assertSessionHas('impor_gagal', true);
-        // Bukan CSV.
-        $this->post('/staff-sarana-prasarana/impor', ['berkas' => UploadedFile::fake()->image('foto.png')])->assertSessionHasErrors('berkas');
-        // Baris salah -> seluruh impor dibatalkan.
-        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,jenis\nLab Baru,Laboratorium\nRuang X,Kantin\n")])->assertSessionHasErrors('berkas');
+        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->gambarPalsu('foto.png')])->assertSessionHasErrors('berkas');
+        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,gedung\nLab Baru,Adriansyah 1\nRuang X,Gedung Lain\n")])->assertSessionHasErrors('berkas');
         $this->assertDatabaseMissing('sarana_prasarana', ['nama' => 'Lab Baru']);
-        // Nama ganda di dalam file.
-        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,jenis\nLab Baru,Laboratorium\nlab baru,Laboratorium\n")])->assertSessionHasErrors('berkas');
+        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,gedung\nLab Baru,Adriansyah 1\nlab baru,Adriansyah 1\n")])->assertSessionHasErrors('berkas');
 
-        // Titik koma (Excel Indonesia), jenis huruf kecil, fasilitas dipisah "|", data lama dilewati.
-        $csv = "Nama;Jenis;Lokasi;Kapasitas;Fasilitas;Deskripsi;Status\n"
-            ."Laboratorium Pemrograman;laboratorium;Gedung TI Lt. 2;30;30 unit PC | Proyektor;;Aktif\n"
-            ."Laboratorium Jaringan;Laboratorium;;40;;;\n"
-            ."Ruang Kelas 1;Ruang Kuliah;;35;;;nonaktif\n";
+        $csv = "Nama;Gedung;Kapasitas;Fasilitas;Status\n"
+            ."Laboratorium Pemrograman;gedung teknik informatika;30;30 unit PC | Proyektor;Aktif\n"
+            ."Laboratorium Jaringan;Gedung Teknik Informatika;40;;\n"
+            ."Ruang Kelas 1;adriansyah 1;35;;nonaktif\n";
         $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv($csv)])
             ->assertSessionHasNoErrors()->assertSessionHas('success', 'Impor selesai: 2 sarana & prasarana ditambahkan, 1 dilewati (sudah terdaftar).');
         $this->assertSame(20, SaranaPrasarana::where('nama', 'Laboratorium Jaringan')->value('kapasitas'), 'data lama tidak diubah');
         $lab = SaranaPrasarana::where('nama', 'Laboratorium Pemrograman')->firstOrFail();
         $this->assertSame(['30 unit PC', 'Proyektor'], $lab->daftar_fasilitas);
-        $this->assertSame('Laboratorium', $lab->jenis);
+        $this->assertSame('Gedung Teknik Informatika', $lab->gedung);
         $this->assertSame('nonaktif', SaranaPrasarana::where('nama', 'Ruang Kelas 1')->value('status'));
 
-        // Pilihan "perbarui".
-        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,jenis,kapasitas\nLaboratorium Jaringan,Laboratorium,40\n"), 'duplikat' => 'perbarui'])
+        $this->post('/staff-sarana-prasarana/impor', ['berkas' => $this->csv("nama,gedung,kapasitas\nLaboratorium Jaringan,Gedung Teknik Informatika,40\n"), 'duplikat' => 'perbarui'])
             ->assertSessionHas('success', 'Impor selesai: 0 sarana & prasarana ditambahkan, 1 diperbarui.');
         $this->assertSame(40, SaranaPrasarana::where('nama', 'Laboratorium Jaringan')->value('kapasitas'));
     }
@@ -210,11 +207,9 @@ class Revisi28SeptemberTahap2Test extends TestCase
         $this->get('/staff-mahasiswa')->assertOk()->assertSee('modalImporMahasiswa', false)->assertSee('Impor CSV');
         $this->get('/staff-mahasiswa/template')->assertOk()->assertSee('nim,nama,email,angkatan,kelas,no_hp,ipk,status_mahasiswa,password');
 
-        // Domain email salah & IPK di luar rentang -> dibatalkan, tidak ada akun yang dibuat.
         $salah = "nim,nama,email,ipk\n2301301901,Mahasiswa Satu,satu@gmail.com,3.5\n2301301902,Mahasiswa Dua,dua@mhs.politala.ac.id,5\n";
         $this->post('/staff-mahasiswa/impor', ['berkas' => $this->csv($salah)])->assertSessionHasErrors('berkas');
         $this->assertSame($jumlahAwal, Mahasiswa::count());
-        // Email ganda di dalam file.
         $ganda = "nim,nama,email\n2301301901,A,sama@mhs.politala.ac.id\n2301301902,B,sama@mhs.politala.ac.id\n";
         $this->post('/staff-mahasiswa/impor', ['berkas' => $this->csv($ganda)])->assertSessionHasErrors('berkas');
 
@@ -235,7 +230,6 @@ class Revisi28SeptemberTahap2Test extends TestCase
         $this->assertTrue(Hash::check('rahasia123', $m2->user->password));
         $this->assertNotSame('Nama Diubah', $lama->fresh()->nama, 'data lama tidak diubah (dilewati)');
 
-        // Akun hasil impor dapat login.
         Auth::logout();
         $this->post('/login', ['role' => 'mahasiswa', 'email' => '2301301901@mhs.politala.ac.id', 'password' => '2301301901'])
             ->assertRedirect(route('mahasiswa-dashboard'));
@@ -256,17 +250,16 @@ class Revisi28SeptemberTahap2Test extends TestCase
         $this->post('/staff-dosen/impor', ['berkas' => $this->csv("nuptk,nama,status\n1003,Pak Tiga,Cuti\n")])->assertSessionHasErrors('berkas');
         $this->post('/staff-dosen/impor', ['berkas' => $this->csv("nuptk,nama,email\n1004,Pak Empat,empat@gmail.com\n")])->assertSessionHasErrors('berkas');
 
-        // Prospek Lulusan: ikon dari label dropdown (ERD: tanpa kolom urutan).
         $this->get('/staff-prospek-lulusan')->assertOk()->assertSee('modalImporProspek', false);
-        $csv = "nama,kategori,ikon,deskripsi,status\nWeb Developer,Pengembangan Web,Pengembangan Web,,\nNetwork Engineer,Jaringan,fa-network-wired,,Aktif\n";
+        $csv = "nama,ikon,deskripsi,status\nWeb Developer,Pengembangan Web,,\nNetwork Engineer,fa-network-wired,,Aktif\nData Engineer,cloud,,\n";
         $this->post('/staff-prospek-lulusan/impor', ['berkas' => $this->csv($csv)])->assertSessionHasNoErrors();
         $this->assertSame('fa-laptop-code', ProspekLulusan::where('nama', 'Web Developer')->value('ikon'));
         $this->assertSame('aktif', ProspekLulusan::where('nama', 'Network Engineer')->value('status'));
-        $this->post('/staff-prospek-lulusan/impor', ['berkas' => $this->csv("nama,kategori,ikon\nX,Y,fa-bukan-ikon\n")])->assertSessionHasErrors('berkas');
+        $this->assertSame('fa-cloud', ProspekLulusan::where('nama', 'Data Engineer')->value('ikon'));
+        $this->post('/staff-prospek-lulusan/impor', ['berkas' => $this->csv("nama,ikon\nX,<b>bukan ikon</b>\n")])->assertSessionHasErrors('berkas');
 
-        // Kurikulum tetap memakai alur impor yang sama; judul kolom SIPADU (Kode MK, Nama MK) dikenali.
-        $this->post('/staff-kurikulum/impor', ['berkas' => $this->csv("Kode MK,Nama MK,Semester,SKS,Jenis\nti101,Algoritma,1,3,wajib\n")])->assertSessionHasNoErrors();
-        $this->assertSame('Wajib', MataKuliah::where('kode', 'TI101')->value('jenis'));
+        $this->post('/staff-mata-kuliah/impor', ['berkas' => $this->csv("Kode MK,Nama MK,Semester,SKS,Jenis\nti101,Algoritma,1,3,wajib\n")])->assertSessionHasNoErrors();
+        $this->assertSame('Wajib', MataKuliah::where('kode_mata_kuliah', 'TI101')->value('jenis'));
     }
 
     public function test_dosen_publik_search_dan_ringkasan(): void
@@ -295,8 +288,8 @@ class Revisi28SeptemberTahap2Test extends TestCase
 
     public function test_halaman_publik_tetap_bisa_dibuka(): void
     {
-        foreach (['/', '/profil', '/prospek-lulusan', '/akreditasi', '/struktur-organisasi', '/dosen', '/kurikulum', '/sarana-prasarana',
-            '/mahasiswa-berprestasi', '/ranking', '/kegiatan-mahasiswa', '/testimoni', '/lowongan-pekerjaan', '/berita', '/akamawa',
+        foreach (['/', '/profil', '/prospek-lulusan', '/akreditasi', '/struktur-organisasi', '/dosen', '/mata-kuliah', '/sarana-prasarana',
+            '/mahasiswa-berprestasi', '/ranking', '/testimoni', '/lowongan-pekerjaan', '/berita', '/akamawa',
             '/kode-etik', '/pengumuman', '/login'] as $url) {
             $this->get($url)->assertOk();
         }

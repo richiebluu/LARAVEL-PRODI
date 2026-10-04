@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** Uji revisi 24-09-2026, disesuaikan dengan revisi 26-09-2026. */
 class RevisiSmokeTest extends TestCase
 {
     use RefreshDatabase;
@@ -37,17 +36,18 @@ class RevisiSmokeTest extends TestCase
             $this->assertStringContainsString('images/logo-ti.png', $html, $url);
         }
 
-        $this->get('/kurikulum')->assertOk(); // dibuat kembali (revisi 28-09-2026)
+        $this->get('/mata-kuliah')->assertOk();
+        $this->get('/kurikulum')->assertRedirect('/mata-kuliah');
         $this->get('/prestasi')->assertRedirect('/mahasiswa-berprestasi');
         $this->get('/mahasiswa')->assertRedirect('/mahasiswa-berprestasi');
 
         $this->get('/')->assertSee('Peringkat Berdasarkan Mahasiswa Berprestasi');
         $this->get('/dosen')->assertSee('tabel-publik', false)->assertSee('Dosen Pengajar');
 
-        // Semua = tabel, kategori lain = card
         $semua = $this->get('/mahasiswa-berprestasi')->getContent();
         $this->assertStringContainsString('class="tabel-publik"', $semua);
-        foreach (config('saw.kriteria') as $k) {
+        $this->assertStringNotContainsString('kategori=Keaktifan', $semua);
+        foreach (collect(config('saw.kriteria'))->except('C4') as $k) {
             $html = $this->get('/mahasiswa-berprestasi?kategori='.urlencode($k['nama']))->assertOk()->getContent();
             $this->assertStringContainsString('person-card', $html, $k['nama']);
             $this->assertStringNotContainsString('class="tabel-publik"', $html, $k['nama']);
@@ -58,25 +58,20 @@ class RevisiSmokeTest extends TestCase
     {
         $mhs = Mahasiswa::first()->user;
 
-        // role dosen sudah tidak ada
         $this->post('/login', ['role' => 'dosen', 'email' => $mhs->email, 'password' => 'password123'])
             ->assertSessionHasErrors('role');
         $this->assertGuest();
 
-        // domain salah untuk staff sebagai mahasiswa
         $this->post('/login', ['role' => 'mahasiswa', 'email' => 'staff@politala.ac.id', 'password' => 'password123'])
             ->assertSessionHasErrors('email');
         $this->assertGuest();
 
-        // tanpa role
         $this->post('/login', ['email' => $mhs->email, 'password' => 'password123'])->assertSessionHasErrors('role');
 
-        // benar
         $this->post('/login', ['role' => 'mahasiswa', 'email' => $mhs->email, 'password' => 'password123'])
             ->assertRedirect('/mahasiswa-dashboard');
         $this->assertAuthenticatedAs($mhs);
 
-        // tidak bisa akses dashboard role lain lewat URL
         $this->get('/staff-dashboard')->assertRedirect('/mahasiswa-dashboard');
         $this->get('/dosen-dashboard')->assertNotFound();
 
@@ -101,14 +96,12 @@ class RevisiSmokeTest extends TestCase
             ->assertDontSee('name="password"', false);
         $this->get('/staff-mahasiswa')->assertSee('DISPEN')->assertSee('>DO<', false)->assertDontSee('email_akun', false);
 
-        // Profil staff (nomor telepon hanya angka)
         $this->post('/staff-profile', ['nama' => 'Sylvi, A.Md', 'jabatan' => 'Staff Prodi', 'email' => 'staff@politala.ac.id', 'no_hp' => '08abc'])
             ->assertSessionHasErrors('no_hp');
         $this->post('/staff-profile', ['nama' => 'Sylvi, A.Md', 'jabatan' => 'Staff Prodi', 'email' => 'staff@politala.ac.id', 'no_hp' => '081234567890'])
             ->assertSessionHasNoErrors()->assertRedirect('/staff-profile');
         $this->assertSame('081234567890', $staff->fresh()->staffProdi->no_hp);
 
-        // Dosen = Data Master, TANPA akun login
         $jumlahUser = User::count();
         $this->post('/staff-dosen', ['nuptk' => '1', 'nama' => 'Dr. A', 'jabatan' => 'Lektor', 'email' => 'a@politala.ac.id', 'status' => 'aktif',
             'pendidikan_terakhir' => 'S3 Informatika', 'google_scholar' => 'https://scholar.google.com/citations?user=abc'])
@@ -126,7 +119,6 @@ class RevisiSmokeTest extends TestCase
         $this->get('/dosen')->assertSee('Lihat Detail')->assertSee('Publikasi Google Scholar')->assertSee('scholar.google.com/citations?user=abc');
         $this->get('/profil')->assertSee('Dosen Pengajar')->assertSee('Dr. A')->assertSee('Struktur Organisasi');
 
-        // Mahasiswa DO & DISPEN
         foreach (['do', 'dispen'] as $i => $st) {
             $this->post('/staff-mahasiswa', ['nim' => '99'.$i, 'nama' => 'M '.$st, 'email' => '99'.$i.'@mhs.politala.ac.id',
                 'status_mahasiswa' => $st, 'password' => 'rahasia123'])->assertSessionHasNoErrors();
@@ -149,17 +141,17 @@ class RevisiSmokeTest extends TestCase
 
         $this->actingAs($m->user);
         foreach (['/mahasiswa-dashboard', '/mahasiswa-profile', '/mahasiswa-prestasi', '/mahasiswa-ajukan-prestasi',
-            '/mahasiswa-pengumuman', '/mahasiswa-notifikasi'] as $url) {
-            $this->get($url)->assertOk();
+            '/mahasiswa-pengumuman'] as $url) {
+            $this->get($url)->assertOk()->assertDontSee('/mahasiswa-notifikasi', false);
         }
-        $this->get('/mahasiswa-profile')->assertSee('Input Keaktifan Organisasi')->assertSee('id="poinC4"', false)
+        $this->get('/mahasiswa-notifikasi')->assertRedirect('/mahasiswa-pengumuman');
+        $this->get('/mahasiswa-profile')->assertSee('Tambah Keaktifan Organisasi')->assertDontSee('Input Keaktifan Organisasi')->assertSee('id="poinC4"', false)
             ->assertDontSee('menunggu verifikasi');
 
-        // Validasi: jabatan harus sesuai skema
         $this->post('/mahasiswa-profile/organisasi', ['organisasi' => [['nama_organisasi' => 'BEM', 'jabatan' => 'Raja']]])
             ->assertSessionHasErrors('organisasi.0.jabatan');
 
-        // TANPA verifikasi: langsung tersimpan
+        Organisasi::where('nim', $m->nim)->delete();
         $this->post('/mahasiswa-profile/organisasi', ['organisasi' => [
             ['nama_organisasi' => 'BEM', 'jabatan' => 'Ketua'],
             ['nama_organisasi' => '', 'jabatan' => ''],
@@ -167,7 +159,6 @@ class RevisiSmokeTest extends TestCase
         $this->assertSame(['BEM' => 'Ketua'], Organisasi::where('nim', $m->nim)->pluck('jabatan', 'nama_organisasi')->all());
         $this->get('/mahasiswa-profile')->assertSee('BEM')->assertSee('Ketua')->assertDontSee('Riwayat Perubahan Data');
 
-        // Data diri: validasi nomor telepon & email, lalu langsung tersimpan
         $this->post('/mahasiswa-profile', ['email' => $m->user->email, 'no_hp' => '0812-abc'])->assertSessionHasErrors('no_hp');
         $this->post('/mahasiswa-profile', ['email' => 'siska@gmail.com', 'no_hp' => '081234567890'])->assertSessionHasErrors('email');
         $this->post('/mahasiswa-profile', ['email' => $m->user->email, 'no_hp' => '081234567890', 'kelas' => 'TI-3B'])->assertSessionHasNoErrors();
@@ -181,7 +172,6 @@ class RevisiSmokeTest extends TestCase
         $this->assertSame(100.0, $c4Baru);
         $this->assertNotSame($c4Lama, $c4Baru);
 
-        // Pengumuman: hanya mahasiswa berprestasi
         $tanpaPrestasi = Mahasiswa::create(['user_id' => User::create(['name' => 'Z', 'email' => '777@mhs.politala.ac.id', 'password' => 'x', 'role' => 'mahasiswa'])->id_user,
             'nim' => '777', 'nama' => 'Z', 'status_mahasiswa' => 'aktif']);
         $this->post('/staff-pengumuman', ['penerima' => [$tanpaPrestasi->nim], 'kategori' => 'Prestasi Akademik', 'judul' => 'a', 'isi' => 'b', 'status' => 'terkirim'])
@@ -195,14 +185,13 @@ class RevisiSmokeTest extends TestCase
             'judul' => 'Selamat', 'isi' => 'Info di website', 'status' => 'terkirim'])->assertSessionHasNoErrors();
         $baru = Pengumuman::latest('id_pengumuman')->first();
         $this->assertSame($prestasi->kategori, $baru->kategori);
-        // REVISI DOSEN 01-10-2026: penerima di tabel pengumuman_penerima + atribut notifikasi
         $this->assertSame([$m->nim], $baru->penerima->pluck('nim')->all());
         $this->assertSame('Selamat', $baru->notifikasi);
         $this->assertNull($baru->penerima->first()->pivot->dibaca_pada);
 
         $this->post('/logout');
         $this->actingAs($m->user);
-        $this->get('/mahasiswa-notifikasi')->assertSee('Pengumuman baru untuk Anda')->assertSee('Selamat');
+        $this->get('/mahasiswa-dashboard')->assertSee('Pengumuman Terbaru')->assertSee('Selamat');
         $this->get('/mahasiswa-pengumuman')->assertSee('Selamat');
         $this->assertNotNull($baru->fresh()->penerima->first()->pivot->dibaca_pada);
     }

@@ -7,22 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * STRUKTUR ORGANISASI PROGRAM STUDI (REVISI 26-09-2026).
- * Bagian dari Profil Program Studi: Koordinator Program Studi, Koordinator Gugus,
- * dan jabatan lain beserta nama pejabatnya. Pejabat dapat dihubungkan ke Data
- * Master Dosen (dosen_id) atau diisi nama saja (mis. Staff Prodi).
- */
 class StrukturOrganisasi extends Model
 {
     use HasFactory;
 
     protected $table = 'struktur_organisasi';
 
-    /** ERD: primary key STRUKTUR_ORGANISASI = id_struktur_organisasi. */
     protected $primaryKey = 'id_struktur_organisasi';
 
-    /** Saran jabatan pada form (Staff Prodi tetap boleh mengetik jabatan lain). */
+    public const JABATAN = [
+        'Koordinator Program Studi' => 1,
+        'Sekretaris Program Studi' => 2,
+        'Koordinator Gugus TEFA' => 3,
+        'Koordinator Gugus Kendali Mutu' => 3,
+        'Koordinator Gugus Penelitian dan Pengabdian' => 3,
+        'Koordinator Laboratorium' => 4,
+        'Staff Prodi' => 5,
+    ];
+
+    public const TINGKAT_LAINNYA = 99;
+
     public const SARAN_JABATAN = [
         'Koordinator Program Studi',
         'Sekretaris Program Studi',
@@ -33,47 +37,60 @@ class StrukturOrganisasi extends Model
         'Staff Prodi',
     ];
 
+    public static function daftarJabatan(): array
+    {
+        return array_keys(self::JABATAN);
+    }
+
+    public static function tingkatJabatan(?string $jabatan): int
+    {
+        return self::JABATAN[(string) $jabatan] ?? self::TINGKAT_LAINNYA;
+    }
+
     protected $fillable = [
         'program_studi_id',
         'dosen_id',
         'jabatan',
         'nama',
-        'foto', // REVISI 27-09-2026: upload foto pejabat
+        'foto',
     ];
 
-    /**
-     * Urutan tampil mengikuti hierarki jabatan (SARAN_JABATAN), lalu urutan input.
-     * ERD tidak memiliki kolom `urutan`, jadi urutan tidak disimpan di database.
-     */
     public function scopeUrut(Builder $query): Builder
     {
-        $kasus = collect(self::SARAN_JABATAN)
+        $daftar = self::SARAN_JABATAN;
+        $kasus = collect($daftar)
             ->map(fn ($j, $i) => 'WHEN ? THEN '.($i + 1))
             ->implode(' ');
 
-        return $query->orderByRaw('CASE jabatan '.$kasus.' ELSE 99 END', self::SARAN_JABATAN)
+        return $query->orderByRaw('CASE jabatan '.$kasus.' ELSE '.self::TINGKAT_LAINNYA.' END', $daftar)
             ->orderBy('id_struktur_organisasi');
     }
 
-    /** ERD: STRUKTUR_ORGANISASI (N) -- BAGIAN DARI --> PROGRAM_STUDI (1). */
+    public function getTingkatAttribute(): int
+    {
+        return self::tingkatJabatan($this->jabatan);
+    }
+
+    public function getJabatanDiLuarDaftarAttribute(): bool
+    {
+        return ! array_key_exists((string) $this->jabatan, self::JABATAN);
+    }
+
     public function programStudi(): BelongsTo
     {
         return $this->belongsTo(ProgramStudi::class, 'program_studi_id', 'id_program_studi');
     }
 
-    /** ERD: STRUKTUR_ORGANISASI (N) -- DIJABAT --> DOSEN (1), opsional. */
     public function dosen(): BelongsTo
     {
         return $this->belongsTo(Dosen::class, 'dosen_id', 'nuptk');
     }
 
-    /** Nama pejabat: dari data dosen bila terhubung, selain itu kolom nama. */
     public function getNamaPejabatAttribute(): string
     {
         return $this->dosen?->nama ?: ($this->nama ?: '-');
     }
 
-    /** Foto yang diunggah pada Struktur Organisasi; bila kosong memakai foto data dosen. */
     public function getFotoUrlAttribute(): ?string
     {
         return \App\Support\Berkas::url($this->foto) ?? $this->dosen?->foto_url;

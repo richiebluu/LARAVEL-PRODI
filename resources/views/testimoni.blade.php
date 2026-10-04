@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Testimoni Alumni | Program Studi Teknologi Informasi</title>
+<title>{{ __('Testimoni Alumni | Program Studi Teknologi Informasi') }}</title>
 <meta name="description" content="Testimoni Alumni Program Studi Teknologi Informasi.">
 <link rel="icon" href="{{ asset('images/logo-ti.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -12,26 +12,24 @@
 </head>
 <body data-nav="testimoni">
 
+  {{-- Navbar --}}
   @include('partials.public-navbar')
 
-  {{-- REVISI DOSEN 01-10-2026: hero memakai foto GTI + overlay warna utama (lihat App\Support\HeroFoto). --}}
+  {{-- Hero --}}
   <section class="page-hero page-hero--foto" style="{{ \App\Support\HeroFoto::style('testimoni') }}">
     <div class="container">
-      <h1>Testimoni Alumni</h1>
-      <p>Cerita alumni Program Studi Teknologi Informasi setelah lulus dan berkarier.</p>
-      <div class="breadcrumb"><a href="{{ url('/') }}">Beranda</a><span class="sep">/</span><span class="current">Testimoni Alumni</span></div>
+      <h1>{{ __('Testimoni Alumni') }}</h1>
+      <p>{{ __('Cerita alumni Program Studi Teknologi Informasi setelah lulus dan berkarier.') }}</p>
+      <div class="breadcrumb"><a href="{{ url('/') }}">{{ __('Beranda') }}</a><span class="sep">/</span><span class="current">{{ __('Testimoni Alumni') }}</span></div>
     </div>
   </section>
 
-  <!-- REVISI 27-09-2026: hanya Testimoni Alumni (ERD: nama, foto, isi, tahun kelulusan,
-       nama perusahaan, jabatan). Komponen testi-card yang sudah ada tetap dipakai. -->
   <section class="section-pad">
     <div class="container">
-      {{-- REVISI 28-09-2026 tahap 2: judul bagian + teks singkat agar halaman tidak hanya berisi card. --}}
       <div class="section-head">
-        <span class="eyebrow"><i class="fa-solid fa-comment-dots"></i> Kata Alumni</span>
-        <h2>Cerita Alumni Teknologi Informasi</h2>
-        <p>Pengalaman alumni setelah lulus dan berkarier di dunia kerja, sebagai gambaran perjalanan lulusan Program Studi Teknologi Informasi.</p>
+        <span class="eyebrow"><i class="fa-solid fa-comment-dots"></i> {{ __('Kata Alumni') }}</span>
+        <h2>{{ __('Cerita Alumni Teknologi Informasi') }}</h2>
+        <p>{{ __('Pengalaman alumni setelah lulus dan berkarier di dunia kerja, sebagai gambaran perjalanan lulusan Program Studi Teknologi Informasi.') }}</p>
       </div>
       <div class="grid-3 reveal-stagger">
         @forelse ($daftarTestimoni as $t)
@@ -48,15 +46,16 @@
         @empty
           <div class="empty-public">
             <img src="{{ asset('images/Kodex.png') }}" alt="Kodex">
-            <p>Belum ada testimoni alumni.</p>
+            <p>{{ __('Belum ada testimoni alumni.') }}</p>
           </div>
         @endforelse
       </div>
     </div>
   </section>
 
+  {{-- Footer --}}
   @include('partials.public-footer')
-  <button class="back-to-top" aria-label="Kembali ke atas"><i class="fa-solid fa-arrow-up"></i></button>
+  <button class="back-to-top" aria-label="{{ __('Kembali ke atas') }}"><i class="fa-solid fa-arrow-up"></i></button>
 <script src="{{ asset('js/main.js') }}"></script>
 </body>
 </html>

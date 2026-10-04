@@ -12,9 +12,11 @@
 <body data-page="staff-profile">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -55,7 +57,7 @@
 
       <div class="panel">
         <div class="panel-head"><h2>Data Diri</h2>
-          <span id="pStatus">{{-- ERD: STAFF_PRODI tidak memiliki kolom status; akun yang terhubung ke data staff berarti aktif. --}}<span class="badge {{ $staff ? 'badge-green' : 'badge-grey' }}">{{ $staff ? 'Aktif' : '-' }}</span></span></div>
+          <span id="pStatus"><span class="badge {{ $staff ? 'badge-green' : 'badge-grey' }}">{{ $staff ? 'Aktif' : '-' }}</span></span></div>
         <dl class="kv">
           <div><dt>NIP</dt><dd id="pNip">{{ $staff->nip ?? '-' }}</dd></div>
           <div><dt>Nama Lengkap</dt><dd id="pNamaLengkap">{{ $staff->nama ?? '-' }}</dd></div>
@@ -67,6 +69,7 @@
       </div>
 
       @if ($staff)
+      {{-- Modal Edit Profil Staff Prodi --}}
       <div class="modal-overlay" id="modalEditProfilStaff">
         <div class="modal-box">
           <form method="POST" action="{{ route('staff-profile.simpan') }}" enctype="multipart/form-data">
@@ -98,7 +101,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif

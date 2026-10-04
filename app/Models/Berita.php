@@ -8,17 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-/**
- * BERITA PROGRAM STUDI (REVISI 26-09-2026).
- * Halaman berdiri sendiri berisi kegiatan/informasi terbaru Program Studi.
- */
 class Berita extends Model
 {
     use HasFactory;
 
     protected $table = 'berita';
 
-    /** ERD: primary key BERITA = id_berita. */
     protected $primaryKey = 'id_berita';
 
     public const STATUS_DRAFT = 'draft';
@@ -29,29 +24,58 @@ class Berita extends Model
         self::STATUS_TERBIT => 'Terbit',
     ];
 
+    public const JENIS_BERITA = 'berita';
+    public const JENIS_KEGIATAN = 'kegiatan_mahasiswa';
+
+    public const LABEL_JENIS = [
+        self::JENIS_BERITA => 'Kegiatan Prodi',
+        self::JENIS_KEGIATAN => 'Kegiatan Mahasiswa',
+    ];
+
+    public const SLUG_JENIS = [
+        'kegiatan-prodi' => self::JENIS_BERITA,
+        'kegiatan-mahasiswa' => self::JENIS_KEGIATAN,
+    ];
+
+    public const KATEGORI_KEGIATAN = [
+        'Seminar & Workshop',
+        'Lomba & Kompetisi',
+        'Pengabdian Masyarakat',
+        'Kunjungan Industri',
+        'Organisasi & Kepanitiaan',
+        'Pelatihan & Sertifikasi',
+        'Lainnya',
+    ];
+
     protected $fillable = [
         'staff_prodi_id',
         'judul',
         'slug',
+        'jenis',
         'kategori',
+        'lokasi',
+        'penyelenggara',
         'ringkasan',
         'isi',
         'gambar',
+        'link_media_sosial',
         'tanggal',
         'status',
+    ];
+
+    protected $attributes = [
+        'jenis' => self::JENIS_BERITA,
     ];
 
     protected $casts = [
         'tanggal' => 'date',
     ];
 
-    /** URL detail memakai slug: /berita/{slug}. */
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
 
-    /** ERD: BERITA (N) -- DIKELOLA --> STAFF_PRODI (1). */
     public function staffProdi(): BelongsTo
     {
         return $this->belongsTo(StaffProdi::class, 'staff_prodi_id', 'id_staff_prodi');
@@ -62,18 +86,38 @@ class Berita extends Model
         return $query->where('status', self::STATUS_TERBIT);
     }
 
+    public function scopeJenis(Builder $query, ?string $jenis): Builder
+    {
+        return $jenis ? $query->where('jenis', $jenis) : $query;
+    }
+
+    public function getLabelJenisAttribute(): string
+    {
+        return self::LABEL_JENIS[$this->jenis] ?? self::LABEL_JENIS[self::JENIS_BERITA];
+    }
+
+    public function getIsKegiatanAttribute(): bool
+    {
+        return $this->jenis === self::JENIS_KEGIATAN;
+    }
+
+    public function getMediaSosialAttribute(): ?array
+    {
+        return filled($this->link_media_sosial)
+            ? ProgramStudi::uraikanMediaSosial($this->link_media_sosial)
+            : null;
+    }
+
     public function getGambarUrlAttribute(): ?string
     {
         return \App\Support\Berkas::url($this->gambar);
     }
 
-    /** Ringkasan untuk card: kolom ringkasan, atau potongan isi. */
     public function getCuplikanAttribute(): string
     {
         return $this->ringkasan ?: Str::limit(trim(strip_tags((string) $this->isi)), 140);
     }
 
-    /** Paragraf isi berita (dipisah baris kosong/baris baru). */
     public function getParagrafAttribute(): array
     {
         return collect(preg_split('/\r\n|\r|\n/', (string) $this->isi))
@@ -83,7 +127,6 @@ class Berita extends Model
             ->all();
     }
 
-    /** Slug unik dari judul. */
     public static function buatSlug(string $judul, ?int $abaikanId = null): string
     {
         $dasar = Str::slug($judul) ?: 'berita';

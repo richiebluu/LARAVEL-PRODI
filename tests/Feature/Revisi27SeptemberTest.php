@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/** Uji revisi 27 September 2026 (dokumen "Website Revisi.docx"). */
 class Revisi27SeptemberTest extends TestCase
 {
     use RefreshDatabase;
@@ -33,7 +32,6 @@ class Revisi27SeptemberTest extends TestCase
         foreach (['tahun_kelulusan', 'nama_perusahaan', 'jabatan', 'foto', 'isi', 'nama'] as $k) {
             $this->assertTrue(Schema::hasColumn('testimoni', $k), $k);
         }
-        // ERD: TESTIMONI tidak memiliki kolom status.
         foreach (['jenis', 'mahasiswa_id', 'keterangan', 'status'] as $k) {
             $this->assertFalse(Schema::hasColumn('testimoni', $k), $k);
         }
@@ -55,9 +53,7 @@ class Revisi27SeptemberTest extends TestCase
             $this->assertStringNotContainsString($lama, $html, $lama);
         }
 
-        // Dropdown Informasi: Berita urutan pertama.
         $this->assertMatchesRegularExpression('#Informasi <i[^>]*></i></a>\s*<div class="dropdown">\s*<a href="[^"]*/berita">Berita</a>\s*<a href="[^"]*/akamawa">AKAMAWA</a>\s*<a href="[^"]*/kode-etik">Kode Etik Mahasiswa</a>#', $html);
-        // Testimoni tanpa dropdown.
         $this->assertMatchesRegularExpression('#<a href="[^"]*/testimoni" class="nav-link" data-group="testimoni"[^>]*>Testimoni</a></div>#', $html);
     }
 
@@ -90,7 +86,6 @@ class Revisi27SeptemberTest extends TestCase
         $this->get('/kode-etik')->assertSee('id="kodetikReader"', false)->assertSee('data-pdf=', false)
             ->assertSee('js/kode-etik.js')->assertSee('Unduh PDF')->assertSee('data-kodetik-fallback', false);
 
-        // Ganti PDF -> berkas lama dihapus.
         $this->post('/staff-profil', ['nama_prodi' => 'Teknologi Informasi',
             'kode_etik' => UploadedFile::fake()->create('baru.pdf', 100, 'application/pdf')])->assertSessionHasNoErrors();
         Storage::disk('public')->assertMissing($lama);
@@ -106,7 +101,7 @@ class Revisi27SeptemberTest extends TestCase
             ->assertSessionHasErrors('tahun_kelulusan');
         $this->post('/staff-testimoni', ['nama' => 'Andi Alumni', 'tahun_kelulusan' => 2023, 'nama_perusahaan' => 'PT Nusantara Digital',
             'jabatan' => 'Web Developer', 'isi' => 'Kuliah di TI sangat membantu karier saya.',
-            'foto' => UploadedFile::fake()->image('andi.jpg')])->assertSessionHasNoErrors();
+            'foto' => $this->gambarPalsu('andi.jpg')])->assertSessionHasNoErrors();
 
         $t = Testimoni::firstOrFail();
         Storage::disk('public')->assertExists($t->foto);
@@ -142,7 +137,7 @@ class Revisi27SeptemberTest extends TestCase
         $this->post('/staff-struktur-organisasi', ['jabatan' => 'Koordinator Gugus TEFA', 'nama' => 'Ibu Rina',
             'foto' => UploadedFile::fake()->create('dok.pdf', 10, 'application/pdf')])->assertSessionHasErrors('foto');
         $this->post('/staff-struktur-organisasi', ['jabatan' => 'Koordinator Gugus TEFA', 'nama' => 'Ibu Rina',
-            'foto' => UploadedFile::fake()->image('rina.png')])->assertSessionHasNoErrors();
+            'foto' => $this->gambarPalsu('rina.png')])->assertSessionHasNoErrors();
         $this->post('/staff-struktur-organisasi', ['jabatan' => 'Koordinator Program Studi', 'dosen_id' => $dosen->nuptk])
             ->assertSessionHasNoErrors();
 
@@ -151,10 +146,9 @@ class Revisi27SeptemberTest extends TestCase
         $this->get('/struktur-organisasi')->assertSee($tefa->foto_url)->assertSee('Ibu Rina');
         $this->get('/profil')->assertSee($tefa->foto_url);
 
-        // Ganti foto -> file lama dihapus; hapus_foto -> kembali tanpa foto.
         $lama = $tefa->foto;
         $this->put('/staff-struktur-organisasi/'.$tefa->id_struktur_organisasi, ['jabatan' => 'Koordinator Gugus TEFA', 'nama' => 'Ibu Rina',
-            'foto' => UploadedFile::fake()->image('baru.png')])->assertSessionHasNoErrors();
+            'foto' => $this->gambarPalsu('baru.png')])->assertSessionHasNoErrors();
         Storage::disk('public')->assertMissing($lama);
         $this->put('/staff-struktur-organisasi/'.$tefa->id_struktur_organisasi, ['jabatan' => 'Koordinator Gugus TEFA', 'nama' => 'Ibu Rina',
             'hapus_foto' => '1'])->assertSessionHasNoErrors();
@@ -193,7 +187,6 @@ class Revisi27SeptemberTest extends TestCase
         $this->assertStringNotContainsString('Poin Prestasi Non-Akademik', $html);
         $this->assertStringNotContainsString('Ranking #', $html);
 
-        // Baris pertama tabel = mahasiswa dengan prestasi terbaru; prestasi lama hanya ada di modal.
         [$tabel, $modal] = explode('id="prestasiModals"', $html, 2);
         $this->assertStringContainsString('Juara Paling Baru', $tabel);
         $this->assertStringNotContainsString('Juara Lama Sekali', $tabel);
@@ -202,14 +195,12 @@ class Revisi27SeptemberTest extends TestCase
         $this->assertStringContainsString('Juara Paling Baru', $baris[1], 'prestasi terbaru di baris pertama');
         $this->assertStringContainsString('(+'.($jumlahAwal + 1).')', $tabel);
 
-        // Tab kriteria tetap card, tanpa angka ranking.
-        foreach (config('saw.kriteria') as $k) {
+        foreach (collect(config('saw.kriteria'))->except('C4') as $k) {
             $card = $this->get('/mahasiswa-berprestasi?kategori='.urlencode($k['nama']))->assertOk()->getContent();
             $this->assertStringContainsString('person-card', $card);
             $this->assertStringNotContainsString('Ranking #', $card);
         }
 
-        // Halaman Ranking Mahasiswa tetap menampilkan peringkat.
         $this->actingAs($this->staff())->post('/staff-ranking/generate', ['tahun' => (int) date('Y')])->assertSessionHasNoErrors();
         $this->get('/ranking')->assertOk()->assertSee('rank', false);
     }

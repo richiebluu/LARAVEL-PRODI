@@ -5,28 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * MATA KULIAH — data Kurikulum Program Studi (REVISI 28-09-2026).
- * Isinya disesuaikan dengan data mata kuliah di SIPADU (diinput/diimpor Staff Prodi).
- */
 class MataKuliah extends Model
 {
     use HasFactory;
 
     protected $table = 'mata_kuliah';
 
-    /** Jenis mata kuliah pada kurikulum. */
+    protected $primaryKey = 'kode_mata_kuliah';
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     public const JENIS = [
         'Wajib',
         'Pilihan',
     ];
 
-    /** Batas nomor semester yang diterima form/impor (D3 umumnya 6 semester). */
     public const SEMESTER_MAKS = 8;
 
     protected $fillable = [
-        'kode',
+        'program_studi_id',
+        'kode_mata_kuliah',
         'nama',
         'semester',
         'sks',
@@ -34,13 +36,19 @@ class MataKuliah extends Model
     ];
 
     protected $casts = [
+        'program_studi_id' => 'integer',
         'semester' => 'integer',
         'sks' => 'integer',
     ];
 
+    public function programStudi(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStudi::class, 'program_studi_id', 'id_program_studi');
+    }
+
     public function scopeUrut(Builder $query): Builder
     {
-        return $query->orderBy('semester')->orderBy('kode');
+        return $query->orderBy('semester')->orderBy('kode_mata_kuliah');
     }
 
     public function scopeCari(Builder $query, ?string $kata): Builder
@@ -49,6 +57,6 @@ class MataKuliah extends Model
             return $query;
         }
 
-        return $query->where(fn ($q) => $q->where('kode', 'like', '%'.$kata.'%')->orWhere('nama', 'like', '%'.$kata.'%'));
+        return $query->where(fn ($q) => $q->where('kode_mata_kuliah', 'like', '%'.$kata.'%')->orWhere('nama', 'like', '%'.$kata.'%'));
     }
 }

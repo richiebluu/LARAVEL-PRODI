@@ -19,11 +19,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/**
- * Uji revisi dosen 26 September 2026.
- * Uji Testimoni, Layanan, dan navigasi dipindah ke Revisi27SeptemberTest
- * karena spesifikasinya diganti dokumen "Website Revisi.docx".
- */
 class Revisi26SeptemberTest extends TestCase
 {
     use RefreshDatabase;
@@ -43,11 +38,9 @@ class Revisi26SeptemberTest extends TestCase
         $this->assertFalse(Schema::hasColumn('dosen', 'riwayat_pendidikan'));
         $this->assertFalse(Schema::hasTable('verifikasi'));
         $this->assertFalse(Schema::hasTable('publikasi'));
-        // ERD terbaru: tabel di luar ERD dihapus.
         foreach (['pengajuan_perubahan', 'notifikasi'] as $t) {
             $this->assertFalse(Schema::hasTable($t), $t);
         }
-        // REVISI DOSEN 01-10-2026: pengumuman_penerima dipakai lagi (satu pengumuman, banyak penerima).
         $this->assertTrue(Schema::hasTable('pengumuman_penerima'));
         foreach (['struktur_organisasi', 'berita', 'lowongan_pekerjaan', 'testimoni'] as $t) {
             $this->assertTrue(Schema::hasTable($t), $t);
@@ -79,7 +72,6 @@ class Revisi26SeptemberTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertSame('Pak Andi', $kaprodi->fresh()->nama_pejabat);
 
-        // Hapus dosen -> struktur tetap ada (dosen_id null)
         $gugus = StrukturOrganisasi::where('jabatan', 'Koordinator Gugus Kendali Mutu')->first();
         $gugus->update(['dosen_id' => $dosen->nuptk]);
         $dosen->delete();
@@ -97,7 +89,7 @@ class Revisi26SeptemberTest extends TestCase
         $this->post('/staff-berita', ['judul' => '', 'isi' => '', 'tanggal' => '', 'status' => 'terbit'])
             ->assertSessionHasErrors(['judul', 'isi', 'tanggal']);
         $this->post('/staff-berita', ['judul' => 'Kuliah Umum AI', 'kategori' => 'Kegiatan', 'isi' => "Paragraf satu.\nParagraf dua.",
-            'tanggal' => '2026-09-20', 'status' => 'terbit', 'gambar' => UploadedFile::fake()->image('a.jpg')])->assertSessionHasNoErrors();
+            'tanggal' => '2026-09-20', 'status' => 'terbit', 'gambar' => $this->gambarPalsu('a.jpg')])->assertSessionHasNoErrors();
         $this->post('/staff-berita', ['judul' => 'Kuliah Umum AI', 'isi' => 'Draft', 'tanggal' => '2026-09-21', 'status' => 'draft'])
             ->assertSessionHasNoErrors();
 
@@ -124,24 +116,25 @@ class Revisi26SeptemberTest extends TestCase
     {
         $this->actingAs($this->staff());
 
-        $this->post('/staff-lowongan', ['posisi' => 'Web Dev', 'perusahaan' => 'PT A', 'link' => 'bukan-url', 'status' => 'aktif'])
+        $this->post('/staff-lowongan', ['posisi' => 'Web Dev', 'perusahaan' => 'PT A', 'link' => 'bukan-url'])
             ->assertSessionHasErrors('link');
         $this->post('/staff-lowongan', ['posisi' => 'Web Developer', 'perusahaan' => 'PT Maju', 'tipe' => 'Magang',
-            'link' => 'https://karier.example.com/web', 'batas_lamaran' => now()->addWeek()->format('Y-m-d'), 'status' => 'aktif'])
+            'link' => 'https://karier.example.com/web', 'batas_lamaran' => now()->addWeek()->format('Y-m-d')])
             ->assertSessionHasNoErrors();
         $this->post('/staff-lowongan', ['posisi' => 'Lowongan Lama', 'perusahaan' => 'PT Lama',
-            'link' => 'https://karier.example.com/lama', 'batas_lamaran' => now()->subDay()->format('Y-m-d'), 'status' => 'aktif'])
+            'link' => 'https://karier.example.com/lama', 'batas_lamaran' => now()->subDay()->format('Y-m-d')])
             ->assertSessionHasNoErrors();
-        $this->post('/staff-lowongan', ['posisi' => 'Lowongan Nonaktif', 'perusahaan' => 'PT X',
-            'link' => 'https://karier.example.com/x', 'status' => 'nonaktif'])->assertSessionHasNoErrors();
+        $this->post('/staff-lowongan', ['posisi' => 'Lowongan Tanpa Batas', 'perusahaan' => 'PT X',
+            'link' => 'https://karier.example.com/x'])->assertSessionHasNoErrors();
+        $this->get('/staff-lowongan')->assertOk()->assertDontSee('name="status"', false)->assertDontSee('<th>Status</th>', false);
 
         $this->get('/lowongan-pekerjaan')->assertOk()->assertSee('Web Developer')->assertSee('https://karier.example.com/web')
-            ->assertDontSee('Lowongan Lama')->assertDontSee('Lowongan Nonaktif');
+            ->assertDontSee('Lowongan Lama')->assertSee('Lowongan Tanpa Batas');
         $this->get('/lowongan-pekerjaan?tipe=Magang')->assertSee('Web Developer');
         $this->get('/')->assertSee('Web Developer');
 
         $l = LowonganPekerjaan::where('posisi', 'Web Developer')->first();
-        $this->put('/staff-lowongan/'.$l->id_lowongan_pekerjaan, ['posisi' => 'Web Developer', 'perusahaan' => 'PT Maju', 'link' => 'https://karier.example.com/web', 'status' => 'nonaktif'])
+        $this->put('/staff-lowongan/'.$l->id_lowongan_pekerjaan, ['posisi' => 'Web Developer', 'perusahaan' => 'PT Maju', 'link' => 'https://karier.example.com/web', 'batas_lamaran' => now()->subDays(2)->format('Y-m-d')])
             ->assertSessionHasNoErrors();
         $this->get('/lowongan-pekerjaan')->assertDontSee('Web Developer');
         $this->delete('/staff-lowongan/'.$l->id_lowongan_pekerjaan)->assertSessionHasNoErrors();
@@ -164,7 +157,6 @@ class Revisi26SeptemberTest extends TestCase
         Mail::assertSent(PengumumanMahasiswaBerprestasi::class, fn ($mail) => $mail->hasTo($m->user->email)
             && $mail->pengumuman->judul === 'Undangan Apresiasi');
 
-        // Render email tidak error
         $html = (new PengumumanMahasiswaBerprestasi(\App\Models\Pengumuman::latest('id_pengumuman')->first(), $m))->render();
         $this->assertStringContainsString('Selamat atas prestasinya.', $html);
     }
@@ -182,14 +174,11 @@ class Revisi26SeptemberTest extends TestCase
         $this->assertFalse(Schema::hasTable('pengajuan_perubahan'), 'riwayat perubahan tidak ada di ERD');
     }
 
-    /* ---------------- Login dengan Google ---------------- */
-
     public function test_tombol_dan_route_login_google(): void
     {
         $this->get('/login')->assertOk()->assertSee('Login dengan Google')->assertSee(route('login.google'), false)
             ->assertSee('fa-google', false)->assertDontSee('Dosen</option>', false);
 
-        // Kredensial belum diisi -> kembali ke login dengan pesan jelas (tidak dianggap berhasil)
         config(['services.google.client_id' => null, 'services.google.client_secret' => null]);
         $this->get('/auth/google')->assertRedirect('/login')->assertSessionHasErrors('email');
         $this->get('/auth/google/callback')->assertRedirect('/login')->assertSessionHasErrors('email');
@@ -201,38 +190,30 @@ class Revisi26SeptemberTest extends TestCase
         $svc = app(GoogleLoginService::class);
         $mhs = Mahasiswa::with('user')->firstOrFail()->user;
 
-        // Mahasiswa terdaftar @mhs.politala.ac.id -> diterima + google_id tersimpan
         $u = $svc->cariAkun(strtoupper($mhs->email), true, 'g-1');
         $this->assertTrue($u->is($mhs));
         $this->assertSame('g-1', $mhs->fresh()->google_id);
 
-        // Akun Google lain untuk akun yang sama -> ditolak
         $this->assertDitolak(fn () => $svc->cariAkun($mhs->email, true, 'g-2'));
 
-        // Staff terdaftar @politala.ac.id -> diterima
         $this->assertTrue($svc->cariAkun('staff@politala.ac.id', true, 'g-staff')->is($this->staff()));
 
-        // Email belum diverifikasi Google -> ditolak
         $this->assertDitolak(fn () => $svc->cariAkun('staff@politala.ac.id', false, 'g-staff'));
 
-        // Domain tidak diizinkan -> ditolak
         foreach (['example@gmail.com', 'example@yahoo.com', 'example@mhs.universitaslain.ac.id',
             'example@politala.ac.id.evil.com', 'example@xmhs.politala.ac.id'] as $email) {
             $this->assertDitolak(fn () => $svc->cariAkun($email, true, 'g-x'), $email);
         }
 
-        // Domain benar tetapi TIDAK terdaftar -> ditolak dan TIDAK membuat akun otomatis
         $jumlah = User::count();
         $this->assertDitolak(fn () => $svc->cariAkun('baru@politala.ac.id', true, 'g-3'));
         $this->assertDitolak(fn () => $svc->cariAkun('999999@mhs.politala.ac.id', true, 'g-4'));
         $this->assertSame($jumlah, User::count());
 
-        // Domain mahasiswa tidak bisa masuk sebagai staff (role ditentukan database + domain)
         $palsu = User::create(['name' => 'Palsu', 'email' => 'palsu@mhs.politala.ac.id', 'password' => 'x', 'role' => 'staff']);
         StaffProdi::create(['id_user' => $palsu->id_user, 'nip' => '1', 'nama' => 'Palsu']);
         $this->assertDitolak(fn () => $svc->cariAkun('palsu@mhs.politala.ac.id', true, 'g-5'));
 
-        // Akun staff tanpa data STAFF_PRODI (relasi USERS 1-1 STAFF_PRODI putus) -> ditolak
         $this->staff()->staffProdi->delete();
         $this->assertDitolak(fn () => $svc->cariAkun('staff@politala.ac.id', true, 'g-staff'));
     }

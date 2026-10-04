@@ -12,9 +12,11 @@
 <body data-page="staff-testimoni">
   <div class="admin-shell">
 
+  {{-- Sidebar --}}
   @include('partials.staff-sidebar')
     <div class="main-area">
 
+      {{-- Header --}}
       <header class="topbar">
         <div style="display:flex; align-items:center;">
           <button class="sidebar-toggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
@@ -54,10 +56,12 @@
               <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="crudSearch" name="q" value="{{ $cari }}" placeholder="Cari nama / perusahaan..."></div>
             </form>
             <a href="{{ url('/testimoni') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-globe"></i> Lihat Halaman Publik</a>
+            {{-- Tombol Tambah --}}
             <button class="btn btn-primary" id="btnTambah" data-modal-open="modalTambahTestimoni"><i class="fa-solid fa-plus"></i> Tambah Testimoni</button>
           </div>
         </div>
         <div class="table-wrap">
+          {{-- Tabel --}}
           <table class="data-table">
             <thead><tr><th>Foto</th><th>Nama Alumni</th><th>Tahun Kelulusan</th><th>Perusahaan &amp; Jabatan</th><th>Testimoni</th><th style="text-align:right;">Aksi</th></tr></thead>
             <tbody id="crudTableBody">
@@ -101,6 +105,7 @@
       </div>
 
 @foreach (['tambah' => null, 'edit' => 1] as $mode => $edit)
+      {{-- Modal Edit --}}
       <div class="modal-overlay" id="{{ $edit ? 'modalEditTestimoni' : 'modalTambahTestimoni' }}">
         <div class="modal-box">
           <form method="POST" action="{{ $edit ? '#' : route('staff-testimoni.store') }}" @if ($edit) id="formEditTestimoni" @endif enctype="multipart/form-data">
@@ -136,7 +141,7 @@
     </div>
   </div>
 
-  <!-- Flash message dari session Laravel (ditampilkan sebagai toast) -->
+  {{-- Flash Message --}}
   @if (session('success'))
     <div data-flash="{{ session('success') }}" data-flash-tipe="ok" hidden></div>
   @endif
